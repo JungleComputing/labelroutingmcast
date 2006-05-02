@@ -1,0 +1,62 @@
+<project
+    name="GMI test applications"
+    default="build"
+    basedir=".">
+
+    <property name="srcdir" value="./src"/>
+    <property name="builddir" value="./build"/>
+    <property name="distdir" value="./jars"/>
+
+    <property name="external.classpath" value="external/bcel-5.1.jar:external/ibis.jar:external/ibis-util.jar:external/ibis-connect.jar:external/log4j-1.2.9.jar"/>
+
+    <!-- Internal target - Preparations for building. -->
+    <target name="prepare"> 
+    	<mkdir dir="${distdir}" />
+        <mkdir dir="${builddir}" />
+    </target>
+
+    <target name="compile" depends="prepare">
+	
+	<javac 	classpath="${external.classpath}"
+		destdir="${builddir}"
+                srcdir="${srcdir}"
+                includes="**/*.java"/>
+
+        <java   classpath="${external.classpath}:${builddir}"
+                classname="ibis.frontend.io.IOGenerator"
+                dir="${builddir}"
+                failonerror="true"
+                fork="true">
+                <arg value="-dir"/>
+                <arg line="benchmark.DoubleData"/>
+        </java>
+    </target>
+
+    <!-- Internal target - Builds the JAR file -->
+    <target name="jar" depends="compile">
+
+	<delete failonerror="false" file="${distdir}/lrmc.jar" />
+
+        <!-- add the log4j configuration file -->
+<!--
+        <copy   file="log4j.properties" todir="${builddir}" />
+-->
+	<jar 	jarfile="${distdir}/lrmc.jar"
+                basedir="${builddir}"
+		includes="**">
+       		<manifest>
+			<attribute name="Built-By" value="${user.name}"/>
+		</manifest>
+	</jar>
+    </target>
+    
+    <target name="build" depends="prepare,compile,jar">
+    </target>
+	
+    <!-- remove all generated code -->
+    <target name="clean" description="Removes the ${distdir} directory">
+         <delete failonerror="false" dir="${builddir}" />
+         <delete failonerror="false" dir="${distdir}" />
+    </target>
+
+</project>
