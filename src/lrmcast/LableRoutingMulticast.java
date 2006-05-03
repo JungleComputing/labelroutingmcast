@@ -151,7 +151,7 @@ public class LableRoutingMulticast extends Thread {
                 sp = portType.createSendPort();
                 
                 ReceivePortIdentifier tmp = 
-                    ibis.registry().lookupReceivePort("Ring-" + id, 1000);
+                    ibis.registry().lookupReceivePort("Ring-" + id.name(), 1000);
                 
                 if (tmp != null) {                 
                     sp.connect(tmp, 1000);                
