@@ -40,7 +40,7 @@ public class LableRoutingMulticast extends Thread {
         
         portType = ibis.createPortType("Ring", s);
         
-        receive = portType.createReceivePort("Ring-" + ibis.identifier());
+        receive = portType.createReceivePort("Ring-" + ibis.identifier().name());
         receive.enableConnections();
         
         this.start();
