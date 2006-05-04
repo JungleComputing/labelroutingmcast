@@ -79,6 +79,8 @@ public class Test4 implements ResizeHandler {
         
     private void runSender() throws IOException, ClassNotFoundException { 
 
+        long size = 0;
+        
         IbisIdentifier [] ids = getParticipants();
                 
         System.err.println("Multicasting to " + ids.length + " machines.");
@@ -92,13 +94,13 @@ public class Test4 implements ResizeHandler {
         long start = System.currentTimeMillis();
         
         for (int i=0;i<count;i++) { 
-            omc.send(ids, data);
+            size += omc.send(ids, data);
         } 
         
         long end = System.currentTimeMillis();
 
         long time = end-start;
-        double tp = ((count*data.getSize())/(1024.0*1024.0))/(time/1000.0);
+        double tp = (size/(1024.0*1024.0))/(time/1000.0);
         
         System.err.println(" sending took " + time + " ms. TP = " + tp + " MB/s.");
     }

@@ -41,17 +41,24 @@ public class ObjectMulticaster implements ByteArrayReceiver {
         //System.err.println("____ got message(" + message.length + ")");       
     }
     
-    public void send(IbisIdentifier [] id, Object o) throws IOException { 
+    public long send(IbisIdentifier [] id, Object o) throws IOException {
+        
+        // We only want to return the number of bytes written in this bcast, so 
+        // reset the count. 
+        bout.resetBytesWritten();
+        
         os.setTarget(id);
         sout.writeObject(o);
         sout.reset(true);
         sout.flush();
+        
+        return bout.bytesWritten();
     }
     
     public Object receive() throws IOException, ClassNotFoundException { 
         return sin.readObject();
     }
-
+    
     public void done() {
         try {
             os.close();
