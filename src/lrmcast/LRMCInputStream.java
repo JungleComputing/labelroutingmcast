@@ -1,16 +1,31 @@
 package lrmcast;
 
+import ibis.ipl.IbisIdentifier;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedList;
 
 public class LRMCInputStream extends InputStream {
-
+    
+    private IbisIdentifier source;
     private LinkedList data = new LinkedList(); 
     
     private byte [] current = null; 
     private int index = 0;
         
+    public LRMCInputStream(IbisIdentifier source) { 
+        this.source = source;
+    }
+    
+    public IbisIdentifier getSource() { 
+        return source;
+    }
+    
+    public boolean haveData() {  
+        return (data.size() != 0);
+    }
+    
     public synchronized void addBuffer(byte [] buffer) { 
         data.addLast(buffer);
         notifyAll();

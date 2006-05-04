@@ -78,8 +78,14 @@ public class Test5 implements ResizeHandler {
         IbisIdentifier [] ids = new IbisIdentifier [participants.size()-1];
         
         // Skip my own ID
-        for (int i=1;i<participants.size();i++) { 
-            ids[i-1] = (IbisIdentifier) participants.get(i);
+        int index = 0;
+        
+        for (int i=0;i<participants.size();i++) {
+            IbisIdentifier tmp = (IbisIdentifier) participants.get(i);
+
+            if (!tmp.equals(ibis.identifier())) { 
+                ids[index++] = tmp;
+            } 
         }
         
         return ids;
@@ -88,6 +94,8 @@ public class Test5 implements ResizeHandler {
     private void runSender() throws IOException, ClassNotFoundException { 
 
         long size = 0;
+        
+        byte [] data = new byte[100*1024];
         
         IbisIdentifier [] ids = getParticipants();
                 
@@ -100,9 +108,9 @@ public class Test5 implements ResizeHandler {
         } 
         
         long start = System.currentTimeMillis();
-        
+                     
         for (int i=0;i<count;i++) { 
-            size += omc.send(ids, ibis.identifier());
+            size += omc.send(ids, data);
         } 
         
         long end = System.currentTimeMillis();
@@ -124,9 +132,10 @@ public class Test5 implements ResizeHandler {
             //dd = (DoubleData) omc.receive();
             //size += dd.getSize();
             
-            IbisIdentifier tmp = (IbisIdentifier) omc.receive();
+            byte [] tmp = (byte []) omc.receive();
+            size += tmp.length;
             
-            System.out.println("Got message: " + tmp);
+            System.out.println("Got message: " + tmp.length);
         }        
         
         long end = System.currentTimeMillis();

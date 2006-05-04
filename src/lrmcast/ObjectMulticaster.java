@@ -1,6 +1,8 @@
 package lrmcast;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.LinkedList;
 
 import ibis.ipl.Ibis;
 import ibis.io.SerializationBase;
@@ -14,30 +16,40 @@ public class ObjectMulticaster implements ByteArrayReceiver {
     private LableRoutingMulticast lrmc; 
     
     private LRMCOutputStream os; 
-    private LRMCInputStream is;
     
     private BufferedArrayOutputStream bout;
     private BufferedArrayInputStream bin;
     
     private SerializationOutput sout;
     private SerializationInput sin;    
-    
+        
+    private HashMap inputStreams = new HashMap(); 
+    private LinkedList available = new LinkedList(); 
+        
     public ObjectMulticaster(Ibis ibis) throws IOException, IbisException {         
         lrmc = new LableRoutingMulticast(ibis, this);
         
         os = new LRMCOutputStream(lrmc);
-        is = new LRMCInputStream();
         
         bout = new BufferedArrayOutputStream(os);
-        bin = new BufferedArrayInputStream(is);
+        bin = new BufferedArrayInputStream(null);
         
         sout = SerializationBase.createSerializationOutput("ibis", bout);
         sin = SerializationBase.createSerializationInput("ibis", bin);        
     }
 
-    public void gotMessage(IbisIdentifier receiver, byte[] message) {          
-        is.addBuffer(message);
+    public synchronized void gotMessage(IbisIdentifier sender, byte[] message) {
         
+        LRMCInputStream tmp = (LRMCInputStream) inputStreams.get(sender);
+        
+        if (tmp == null) {
+            tmp = new LRMCInputStream(sender);
+            inputStreams.put(sender, tmp);           
+            available.addLast(sender);
+            notifyAll();
+        }
+        
+        tmp.addBuffer(message);        
         //System.err.println("____ got message(" + message.length + ")");       
     }
     
@@ -54,9 +66,65 @@ public class ObjectMulticaster implements ByteArrayReceiver {
         
         return bout.bytesWritten();
     }
+   
+    private synchronized LRMCInputStream getNextFilledStream() {
+
+        while (available.size() == 0) { 
+            try { 
+                wait();
+            } catch (Exception e) {
+                // ignore
+            }            
+        }
+        
+        return (LRMCInputStream) inputStreams.get(available.removeFirst());
+    }
     
-    public Object receive() throws IOException, ClassNotFoundException { 
-        return sin.readObject();
+    private synchronized void returnStreams(LRMCInputStream stream) { 
+
+        if (stream.haveData()) { 
+            // there is still some data left in the stream, so return it to 
+            // the 'available' list. 
+            available.addLast(stream.getSource());            
+        } else { 
+            inputStreams.remove(stream.getSource());
+        }
+    }
+        
+    public Object receive() throws IOException, ClassNotFoundException {
+        
+        Object result = null; 
+        IOException ioe = null;
+        ClassNotFoundException cnfe = null;
+        
+        // Get the next stream that has some data
+        LRMCInputStream stream = getNextFilledStream(); 
+        
+        // Plug it into the deserializer
+        bin.setInputStream(stream);
+               
+        // Read an object
+        try { 
+            result = sin.readObject();
+        } catch (IOException e1) {
+            ioe = e1;
+        } catch (ClassNotFoundException e2) {
+            cnfe = e2;
+        }
+        
+        // Return the stream to the queue (if necessary) 
+        returnStreams(stream);
+        
+        // return the 'result' (exception or otherwise...)
+        if (ioe != null) { 
+            throw ioe;
+        }        
+        
+        if (cnfe != null) { 
+            throw cnfe;
+        }                        
+        
+        return result;
     }
     
     public void done() {

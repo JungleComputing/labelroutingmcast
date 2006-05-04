@@ -54,6 +54,10 @@ public final class BufferedArrayInputStream extends DataInputStream {
         this.in = in;
         conversion = Conversion.loadConversion(false);
     }
+    
+    public void setInputStream(InputStream in) { 
+        this.in = in;
+    }
 
     public long bytesRead() {
         return bytes - buffered_bytes;
