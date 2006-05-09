@@ -1,11 +1,11 @@
 package benchmark;
 
+import ibis.ipl.IbisException;
+import ibis.ipl.IbisIdentifier;
+
 import java.io.IOException;
-import java.util.ArrayList;
 
 import lrmcast.ObjectMulticaster;
-
-import ibis.ipl.*;
 
 /**
  * 
@@ -22,19 +22,10 @@ import ibis.ipl.*;
  * @version 1.0 May 9, 2006
  * @since 1.0
  */
-public class Test5 implements ResizeHandler {
-       
-    private static int size = 100*1024;
-    private static int count = 10;
-    private static int repeat = 10;
-    private static int machinesNeeded = 1;
+public class Test5 extends TestBase {
         
     private static boolean verbose = false;
-    
-    private Ibis ibis;
 
-    private ArrayList participants = new ArrayList();
-        
     private ObjectMulticaster omc;
     
     private Object data;
@@ -71,18 +62,8 @@ public class Test5 implements ResizeHandler {
         }         
     }
             
-    private Test5() throws IbisException, IOException, ClassNotFoundException { 
-        
-        StaticProperties s = new StaticProperties();
-        s.add("Serialization", "object");
-        s.add("Communication", "ManyToOne, Reliable, ExplicitReceipt");
-        s.add("Worldmodel", "open");
-
-        ibis = Ibis.createIbis(s, this);
-        System.err.println("Ibis created on " + ibis.identifier());
-        
-        ibis.enableResizeUpcalls();        
-        
+    private Test5() throws IbisException, IOException, ClassNotFoundException {         
+        super();
         omc = new ObjectMulticaster(ibis);
     }
     
@@ -95,7 +76,7 @@ public class Test5 implements ResizeHandler {
         // Start receive thread
         new Receiver().start();
                         
-        waitForOthersToArrive();
+        waitForEnoughMachines();
       
         long start = System.currentTimeMillis();
         
@@ -118,7 +99,7 @@ public class Test5 implements ResizeHandler {
         System.err.println("Total TP = " + tp + " MB/s. (includes warmup)");
               
         omc.done();
-        ibis.end();
+        done();
     }
     
     private synchronized void waitForOthersToQuit() {
@@ -137,38 +118,7 @@ public class Test5 implements ResizeHandler {
         notifyAll();
         return (machinesDone == participants.size()-1);
     }
-
-    private synchronized void waitForOthersToArrive() {
-        
-        while (participants.size() < machinesNeeded) { 
-            try { 
-                wait();
-            } catch (Exception e) { 
-                // ignore 
-            }
-        }
-    }
-        
-    private synchronized IbisIdentifier [] getParticipants() { 
-        // Get the set of Ibis' which will participate in this run
-        IbisIdentifier [] ids = new IbisIdentifier[participants.size()-1];
-        
-        // Skip my own ID
-        int index = 0;
-        
-        IbisIdentifier me = ibis.identifier();
-        
-        for (int i=0;i<participants.size();i++) {
-            IbisIdentifier p = (IbisIdentifier) participants.get(i);
-
-            if (!p.equals(me)) { 
-                ids[index++] = p;
-            } 
-        }
-        
-        return ids;
-    } 
-        
+           
     private void runSender() throws IOException, ClassNotFoundException { 
 
         long size = 0;
@@ -197,61 +147,9 @@ public class Test5 implements ResizeHandler {
         System.err.println(" sending took " + time + " ms. TP = " + tp + " MB/s.");
     }
     
-  
-                     
-    public synchronized void joined(IbisIdentifier id) {       
-        participants.add(id);
-        notifyAll();
-        
-        if (verbose) { 
-            System.err.println("Joined " + id);
-        } 
-    }
-
-    public synchronized void left(IbisIdentifier id) {
-        participants.remove(id);        
-        
-        if (verbose) { 
-            System.err.println("Left " + id);
-        } 
-    }
-
-    public synchronized void died(IbisIdentifier id) {
-        participants.remove(id);
-        
-        if (verbose) { 
-            System.err.println("Died " + id);
-        } 
-    }
-
-    public synchronized void mustLeave(IbisIdentifier[] id) {             
-        participants.remove(id);
-        
-        if (verbose) { 
-            System.err.println("Must leave " + id);
-        } 
-        
-    }
-    
     public static void main(String [] args) {
                
-        for (int i=0;i<args.length;i++) {
-            
-            if (args[i].equals("-count")) { 
-                count = Integer.parseInt(args[++i]);                
-            } else if (args[i].equals("-repeat")) {
-                repeat = Integer.parseInt(args[++i]);
-            } else if (args[i].equals("-machines")) {
-                machinesNeeded = Integer.parseInt(args[++i]);                            
-            } else if (args[i].equals("-size")) {                
-                size = Integer.parseInt(args[++i]);
-            } else if (args[i].equals("-verbose")) {
-                verbose = true;            
-            } else { 
-                System.err.println("Unknown option " + args[i]);
-                System.exit(1);
-            }
-        }
+        parseOptions(args);
         
         try {            
             new Test5().start();

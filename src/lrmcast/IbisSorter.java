@@ -15,12 +15,22 @@ public class IbisSorter implements Comparator {
     private IbisSorter(String preferredCluster) { 
         this.preferredCluster = preferredCluster;
     }
-    
+
     public static void sort(IbisIdentifier [] ids) { 
-        Arrays.sort(ids, sorter);
+        sort(ids, 0, ids.length);
     }    
 
     public static void sort(IbisIdentifier local, IbisIdentifier [] ids) { 
+        sort(local, ids, 0, ids.length);
+    }
+
+    
+    public static void sort(IbisIdentifier [] ids, int from, int to) { 
+        Arrays.sort(ids, from, to, sorter);
+    }    
+
+    public static void sort(IbisIdentifier local, IbisIdentifier [] ids, 
+            int from, int to) { 
     
         IbisSorter tmp = sorter;
         
@@ -28,7 +38,7 @@ public class IbisSorter implements Comparator {
             tmp = new IbisSorter(local.cluster());
         }
         
-        Arrays.sort(ids, tmp);
+        Arrays.sort(ids, from, to, tmp);
     }
 
     public int compare(Object o1, Object o2) {

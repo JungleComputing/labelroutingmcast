@@ -28,9 +28,14 @@ public class ObjectMulticaster implements ByteArrayReceiver {
     
     private long totalData = 0;
         
-    public ObjectMulticaster(Ibis ibis) throws IOException, IbisException {
+    public ObjectMulticaster(Ibis ibis) throws IOException, IbisException { 
+        this(ibis, false);
+    }
+    
+    public ObjectMulticaster(Ibis ibis, boolean changeOrder) 
+        throws IOException, IbisException {
                 
-        lrmc = new LableRoutingMulticast(ibis, this);
+        lrmc = new LableRoutingMulticast(ibis, this, changeOrder);
         
         os = new LRMCOutputStream(lrmc);
         
