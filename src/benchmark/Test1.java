@@ -3,17 +3,36 @@ package benchmark;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import lrmcast.IbisSorter;
 import lrmcast.LableRoutingMulticast;
 import lrmcast.ByteArrayReceiver;
 
 import ibis.ipl.*;
 
+/**
+ * In this test a single sender sends a byte[] using the LableRoutingMulticast.
+ * The test waits until a specified number of machines is participating 
+ * 
+ * It can handle machines joining/leaving, but not crashing. It is capable of 
+ * performing a chained or ring multicast. 
+ *
+ * The destinations can also be sorted to make the whole thing SMP/cluster aware. 
+ *  
+ * @author Jason Maassen
+ * @version 1.0 May 9, 2006
+ * @since 1.0
+ */
 public class Test1 implements ResizeHandler, ByteArrayReceiver {
        
-    private static int size = 1024;
+    private static int size = 32*1024;
     private static int count = 1024;
     private static int repeat = 10;
-    private static int minMachines = 1;
+    private static int minMachines = 1;   
+    
+    private static boolean autoSort = false;
+    private static boolean sortOnce = false;    
+    
+    private static boolean ring = false;
         
     private int receivedMessages = 0;
     
@@ -21,8 +40,11 @@ public class Test1 implements ResizeHandler, ByteArrayReceiver {
     private LableRoutingMulticast lrmcast;
     private IbisIdentifier masterID;         
     
-    private ArrayList participants = new ArrayList();
-        
+    private ArrayList participants = new ArrayList();    
+    private boolean participantsChanged = false;
+    
+    private IbisIdentifier [] destinations;
+    
     private Test1() throws IbisException, IOException, ClassNotFoundException { 
         StaticProperties s = new StaticProperties();
         s.add("Serialization", "object");
@@ -33,7 +55,7 @@ public class Test1 implements ResizeHandler, ByteArrayReceiver {
         
         System.err.println("Ibis created!");
         
-        lrmcast = new LableRoutingMulticast(ibis, this);
+        lrmcast = new LableRoutingMulticast(ibis, this, autoSort);
         
         ibis.enableResizeUpcalls();
     }
@@ -74,17 +96,41 @@ public class Test1 implements ResizeHandler, ByteArrayReceiver {
         ibis.end();
     }
     
-    private synchronized IbisIdentifier [] getParticipants() { 
-        // First get the set of Ibis' which will participate in this run         
-        IbisIdentifier [] ids = 
-            (IbisIdentifier []) participants.toArray(new IbisIdentifier[0]);
+    private synchronized IbisIdentifier [] getParticipants() {     
         
-        // Flip first and last, so I will get my own message back
-        IbisIdentifier tmp = ids[0];
-        ids[0] = ids[ids.length-1];
-        ids[ids.length-1] = tmp;
+        if (destinations == null || participantsChanged) {
+            
+            int size = participants.size()-1;
+            
+            if (ring) { 
+                size++;
+            }
+            
+            destinations = new IbisIdentifier[size];
         
-        return ids;
+            // Skip my own ID
+            int index = 0;
+            
+            for (int i=0;i<participants.size();i++) {
+                
+                IbisIdentifier tmp = (IbisIdentifier) participants.get(i);
+                
+                if (!tmp.equals(ibis.identifier())) { 
+                    destinations[index++] = tmp;
+                } 
+            }
+            
+            if (sortOnce) { 
+                IbisSorter.sort(ibis.identifier(), destinations);
+            }
+            
+            if (ring) { 
+                destinations[index] = ibis.identifier();
+            }            
+        } 
+        
+        participantsChanged = false;          
+        return destinations;
     } 
         
     private void runTest() { 
@@ -101,17 +147,20 @@ public class Test1 implements ResizeHandler, ByteArrayReceiver {
         
         for (int i=0;i<count;i++) { 
             lrmcast.send(ids, data);        
-        } 
+        }         
         
-        synchronized (this) {
-            while (receivedMessages != count) { 
-                try { 
-                    wait();                    
-                } catch (InterruptedException e) {
-                    // ignore
+        if (ring) {
+            // Wait for my own messages to appear
+            synchronized (this) {
+                while (receivedMessages != count) { 
+                    try { 
+                        wait();                    
+                    } catch (InterruptedException e) {
+                        // ignore
+                    }
                 }
             }
-        }
+        } 
         
         long end = System.currentTimeMillis();
 
@@ -162,6 +211,8 @@ public class Test1 implements ResizeHandler, ByteArrayReceiver {
             
             System.err.println("Master is " + id);
         }
+        
+        participantsChanged = true;        
     }
 
     public synchronized void left(IbisIdentifier id) {
@@ -171,9 +222,11 @@ public class Test1 implements ResizeHandler, ByteArrayReceiver {
             masterID = null;
             notifyAll();
         }
+        
+        participantsChanged = true;
     }
 
-    public synchronized void died(IbisIdentifier id) {
+    public synchronized void died(IbisIdentifier id) {        
         // ignored
     }
 
@@ -184,7 +237,7 @@ public class Test1 implements ResizeHandler, ByteArrayReceiver {
     public synchronized void gotMessage(IbisIdentifier sender, byte[] message) {
         receivedMessages++;
         
-        if (receivedMessages == count) { 
+        if (ring && receivedMessages == count) { 
             notifyAll();
         }
     }
@@ -200,13 +253,30 @@ public class Test1 implements ResizeHandler, ByteArrayReceiver {
             } else if (args[i].equals("-size")) {
                 size = Integer.parseInt(args[++i]);
             } else if (args[i].equals("-machines")) {
-                minMachines = Integer.parseInt(args[++i]);    
+                minMachines = Integer.parseInt(args[++i]);
+            } else if (args[i].equals("-sortOnce")) {
+                sortOnce = true;    
+            } else if (args[i].equals("-sortAuto")) {
+                autoSort = true;
+            } else if (args[i].equals("-ring")) {
+                ring = true;    
             } else { 
                 System.err.println("Unknown option " + args[i]);
                 System.exit(1);
             }
         }
         
+        if (ring && autoSort) { 
+            System.err.println("Cannot send in a ring AND auto sort the " +
+                    "destinations!");
+            System.exit(1);
+        }
+        
+        if (sortOnce && autoSort) { 
+            System.err.println("Cannot sort in two different ways!!");
+            System.exit(1);
+        }
+
         try { 
             new Test1().start();
         } catch (Exception e) {

@@ -7,6 +7,17 @@ import lrmcast.ObjectMulticaster;
 
 import ibis.ipl.*;
 
+/**
+ * 
+ * In this test a single sender sends an object in a chain using the 
+ * ObjectMulticaster. The test waits until the specified number of machines is 
+ * reached. It can handle machines joining/leaving and crashing (except for a 
+ * crash of the master). It does not send to itself.      
+ *  
+ * @author Jason Maassen
+ * @version 1.0 May 9, 2006
+ * @since 1.0
+ */
 public class Test4 implements ResizeHandler {
        
     private static int size = 1000000;

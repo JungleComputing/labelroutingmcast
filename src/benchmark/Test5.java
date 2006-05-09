@@ -7,6 +7,21 @@ import lrmcast.ObjectMulticaster;
 
 import ibis.ipl.*;
 
+/**
+ * 
+ * In this test all machines send an object in a chain using the 
+ * ObjectMulticaster. The test waits until the specified number of machines is 
+ * reached after which everybody starts sending. A 'null' message is send to 
+ * indicate that a machine is done. When the number of null messages is equal to 
+ * the number of machines, the application terminates.   
+ *  
+ * The application can handle machines joining/leaving/crashing, although there 
+ * may be a race condition when machines join when the others are already done. 
+ *  
+ * @author Jason Maassen
+ * @version 1.0 May 9, 2006
+ * @since 1.0
+ */
 public class Test5 implements ResizeHandler {
        
     private static int size = 100*1024;

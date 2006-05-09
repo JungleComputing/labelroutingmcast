@@ -27,13 +27,20 @@ public class LableRoutingMulticast extends Thread {
     private final HashMap sendports = new HashMap();    
     private final HashMap diedmachines = new HashMap();
         
-    private boolean mustStop = false;
+    private boolean mustStop = false;    
+    private boolean changeOrder = false;
     
-    public LableRoutingMulticast(Ibis ibis, ByteArrayReceiver m) throws IOException, IbisException {
-        
-        this.ibis = ibis;
+    public LableRoutingMulticast(Ibis ibis, ByteArrayReceiver m) 
+        throws IOException, IbisException {
+        this(ibis, m, false);
+    }
+            
+    public LableRoutingMulticast(Ibis ibis, ByteArrayReceiver m, 
+            boolean changeOrder) throws IOException, IbisException {
+        this.ibis = ibis;    
         this.receiver = m;
-        
+        this.changeOrder = changeOrder;
+                
         StaticProperties s = new StaticProperties();
         s.add("Serialization", "object");
         s.add("Communication", "ManyToOne, Reliable, ExplicitReceipt");
@@ -97,11 +104,27 @@ public class LableRoutingMulticast extends Thread {
     }
     
     public void send(IbisIdentifier [] destinations, byte [] message) {
-        send(ibis.identifier(), destinations, message, 0, message.length);
+        send(destinations, message, 0, message.length);
     } 
     
     
     public void send(IbisIdentifier [] destinations, byte [] message, int off, int len) {
+        
+        if (changeOrder) { 
+            // We are allowed to change the order of machines in the destination
+            // array. This can be used to make the mcast 'cluster aware'.            
+            IbisSorter.sort(ibis.identifier(), destinations);
+            /*
+            System.err.println("Sender " + ibis.identifier() + " " 
+                    + ibis.identifier().cluster() + " sorted ids: ");
+            
+            for (int i=0;i<destinations.length;i++) { 
+                System.err.println("  " + destinations[i] + " (" 
+                        + destinations[i].cluster() + ")");                
+            } 
+            */           
+        }
+                        
         send(ibis.identifier(), destinations, message, off, len);
     } 
     

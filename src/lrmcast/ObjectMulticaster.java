@@ -28,7 +28,8 @@ public class ObjectMulticaster implements ByteArrayReceiver {
     
     private long totalData = 0;
         
-    public ObjectMulticaster(Ibis ibis) throws IOException, IbisException {         
+    public ObjectMulticaster(Ibis ibis) throws IOException, IbisException {
+                
         lrmc = new LableRoutingMulticast(ibis, this);
         
         os = new LRMCOutputStream(lrmc);
@@ -39,7 +40,7 @@ public class ObjectMulticaster implements ByteArrayReceiver {
         sout = SerializationBase.createSerializationOutput("ibis", bout);
         sin = SerializationBase.createSerializationInput("ibis", bin);        
     }
-
+    
     public synchronized void gotMessage(IbisIdentifier sender, byte[] message) {
         
         LRMCInputStream tmp = (LRMCInputStream) inputStreams.get(sender);
