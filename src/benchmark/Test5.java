@@ -9,26 +9,47 @@ import ibis.ipl.*;
 
 public class Test5 implements ResizeHandler {
        
-    private static int size = 1000000;
-    private static int count = 1;
-    private static int repeat = 10000;
+    private static int size = 100*1024;
+    private static int count = 10;
+    private static int repeat = 10;
+    private static int machinesNeeded = 1;
         
     private static boolean verbose = false;
     
     private Ibis ibis;
-    private IbisIdentifier masterID;         
-    
+
     private ArrayList participants = new ArrayList();
         
     private ObjectMulticaster omc;
     
-    private DoubleData data;
+    private Object data;
     
+    private int machinesDone = 0;
+        
     private class Receiver extends Thread { 
         
         public void run() {
+            
+            int messages = 0;
+            long bytes = 0;
+            
             try { 
-                while (runReceiver());
+                while (true) { 
+
+                    Object tmp = omc.receive();                      
+                    bytes += omc.bytesRead();
+                    
+                    if (tmp == null) {
+                        if (machineDone()) { 
+                            System.out.println("Done!");
+                            System.out.println("Got " + messages + " messages");
+                            System.out.println("  (" + (bytes/(1024*1024)) + " MB)");
+                            return;
+                        }
+                    }  
+                    
+                    messages++;
+                }                        
             } catch (Exception e) {
                 System.out.println("Oops, receiver died!" + e);
             }
@@ -53,38 +74,80 @@ public class Test5 implements ResizeHandler {
     private void start() throws IOException, ClassNotFoundException { 
 
         System.err.println("Starting test");
-            
+    
+        data = new byte[size];
+                
         // Start receive thread
         new Receiver().start();
+                        
+        waitForOthersToArrive();
+      
+        long start = System.currentTimeMillis();
         
         // Run for 'repeat' iterations 
-        for (int i=0;i<repeat;i++) {                                       
+        for (int i=0;i<repeat;i++) {
             runSender();
         } 
+                
+        // Tell eveyone that I'm done
+        omc.send(getParticipants(), null);
         
-        // wait for receiver somehow
-        try { 
-            Thread.sleep(10000);
-        } catch (Exception e) {
-            // ignore
-        }
+        waitForOthersToQuit();
+      
+        long end = System.currentTimeMillis();
         
+        long total = omc.totalBytes();        
+        long time = end-start;
+        double tp = (total/(1024.0*1024.0))/(time/1000.0);
+        
+        System.err.println("Total TP = " + tp + " MB/s. (includes warmup)");
+              
         omc.done();
         ibis.end();
     }
     
+    private synchronized void waitForOthersToQuit() {
+
+        while (machinesDone < participants.size()-1) { 
+            try { 
+                wait();
+            } catch (Exception e) { 
+                // ignore 
+            }
+        }
+    }
+       
+    private synchronized boolean machineDone() {        
+        machinesDone++;        
+        notifyAll();
+        return (machinesDone == participants.size()-1);
+    }
+
+    private synchronized void waitForOthersToArrive() {
+        
+        while (participants.size() < machinesNeeded) { 
+            try { 
+                wait();
+            } catch (Exception e) { 
+                // ignore 
+            }
+        }
+    }
+        
     private synchronized IbisIdentifier [] getParticipants() { 
         // Get the set of Ibis' which will participate in this run
-        IbisIdentifier [] ids = new IbisIdentifier [participants.size()-1];
+        IbisIdentifier [] ids = new IbisIdentifier[participants.size()-1];
         
         // Skip my own ID
         int index = 0;
         
+        IbisIdentifier me = ibis.identifier();
+        
         for (int i=0;i<participants.size();i++) {
-            IbisIdentifier tmp = (IbisIdentifier) participants.get(i);
+            IbisIdentifier p = (IbisIdentifier) participants.get(i);
 
-            if (!tmp.equals(ibis.identifier())) { 
-                ids[index++] = tmp;
+            if (!p.equals(me)) { 
+                ids[index++] = p;
             } 
         }
         
@@ -94,9 +157,7 @@ public class Test5 implements ResizeHandler {
     private void runSender() throws IOException, ClassNotFoundException { 
 
         long size = 0;
-        
-        byte [] data = new byte[100*1024];
-        
+                
         IbisIdentifier [] ids = getParticipants();
                 
         System.err.println("Multicasting to " + ids.length + " machines.");
@@ -121,51 +182,15 @@ public class Test5 implements ResizeHandler {
         System.err.println(" sending took " + time + " ms. TP = " + tp + " MB/s.");
     }
     
-    private boolean runReceiver() throws IOException, ClassNotFoundException { 
-
-        //DoubleData dd = null;
-        long size = 0;
-        
-        long start = System.currentTimeMillis();
-        
-        for (int c=0;c<count;c++) {
-            //dd = (DoubleData) omc.receive();
-            //size += dd.getSize();
-            
-            byte [] tmp = (byte []) omc.receive();
-            size += tmp.length;
-            
-            System.out.println("Got message: " + tmp.length);
-        }        
-        
-        long end = System.currentTimeMillis();
-        
-        if (verbose) { 
-            long time = end-start;
-            double tp = (size/(1024.0*1024.0))/(time/1000.0);
-        
-            System.err.println(" receiving took " + time + " ms. TP = " 
-                    + tp + " MB/s.");
-        } 
-        
-        return true; // (dd.iteration < repeat);     
-    }
+  
                      
-    public synchronized void joined(IbisIdentifier id) {
+    public synchronized void joined(IbisIdentifier id) {       
+        participants.add(id);
+        notifyAll();
         
         if (verbose) { 
-            System.err.println("Join " + id);
+            System.err.println("Joined " + id);
         } 
-        
-        participants.add(id);
-        
-        if (participants.size() == 1) { 
-            // the first one will be the master
-            masterID = id;
-            notifyAll();
-            
-            System.err.println("Master is " + id);
-        }
     }
 
     public synchronized void left(IbisIdentifier id) {
@@ -200,7 +225,9 @@ public class Test5 implements ResizeHandler {
             if (args[i].equals("-count")) { 
                 count = Integer.parseInt(args[++i]);                
             } else if (args[i].equals("-repeat")) {
-                repeat = Integer.parseInt(args[++i]);                
+                repeat = Integer.parseInt(args[++i]);
+            } else if (args[i].equals("-machines")) {
+                machinesNeeded = Integer.parseInt(args[++i]);                            
             } else if (args[i].equals("-size")) {                
                 size = Integer.parseInt(args[++i]);
             } else if (args[i].equals("-verbose")) {

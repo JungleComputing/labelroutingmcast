@@ -24,7 +24,9 @@ public class ObjectMulticaster implements ByteArrayReceiver {
     private SerializationInput sin;    
         
     private HashMap inputStreams = new HashMap(); 
-    private LinkedList available = new LinkedList(); 
+    private LinkedList available = new LinkedList();
+    
+    private long totalData = 0;
         
     public ObjectMulticaster(Ibis ibis) throws IOException, IbisException {         
         lrmc = new LableRoutingMulticast(ibis, this);
@@ -56,13 +58,15 @@ public class ObjectMulticaster implements ByteArrayReceiver {
     public long send(IbisIdentifier [] id, Object o) throws IOException {
         
         // We only want to return the number of bytes written in this bcast, so 
-        // reset the count. 
+        // reset the count.
         bout.resetBytesWritten();
         
         os.setTarget(id);
         sout.writeObject(o);
         sout.reset(true);
         sout.flush();
+
+        totalData += bout.bytesWritten();
         
         return bout.bytesWritten();
     }
@@ -102,7 +106,8 @@ public class ObjectMulticaster implements ByteArrayReceiver {
         
         // Plug it into the deserializer
         bin.setInputStream(stream);
-               
+        bin.resetBytesRead();
+        
         // Read an object
         try { 
             result = sin.readObject();
@@ -114,7 +119,9 @@ public class ObjectMulticaster implements ByteArrayReceiver {
         
         // Return the stream to the queue (if necessary) 
         returnStreams(stream);
-        
+     
+        totalData += bin.bytesRead();
+                
         // return the 'result' (exception or otherwise...)
         if (ioe != null) { 
             throw ioe;
@@ -125,6 +132,18 @@ public class ObjectMulticaster implements ByteArrayReceiver {
         }                        
         
         return result;
+    }
+    
+    public long bytesRead() { 
+        return bin.bytesRead();
+    }
+    
+    public long bytesWritten() { 
+        return bout.bytesWritten();
+    }
+    
+    public long totalBytes() { 
+        return totalData;
     }
     
     public void done() {
