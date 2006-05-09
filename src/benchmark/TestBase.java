@@ -115,11 +115,11 @@ public class TestBase implements ResizeHandler {
             }    
 
             if (verbose) {
-                System.err.println("Sending from " + ibis.identifier() + " / "
+                System.err.println("Sending from " + ibis.identifier().name() + " / "
                         + ibis.identifier().cluster() + " to ");
                 
                 for (int i=0;i<destinations.length;i++) { 
-                    System.err.println( destinations[i] + " / "
+                    System.err.println( destinations[i].name() + " / "
                             + destinations[i].cluster());                         
                 }
             }
