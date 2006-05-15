@@ -28,7 +28,9 @@ public class LableRoutingMulticast extends Thread {
     private final HashMap diedmachines = new HashMap();
         
     private boolean mustStop = false;    
-    private boolean changeOrder = false;
+    private boolean changeOrder = false;    
+    
+    private IbisIdentifier[] destinations = null;
     
     public LableRoutingMulticast(Ibis ibis, ByteArrayReceiver m) 
         throws IOException, IbisException {
@@ -53,8 +55,13 @@ public class LableRoutingMulticast extends Thread {
         this.start();
     }
     
-    private final IbisIdentifier [] getDestinationArray(int len) { 
-        return new IbisIdentifier[len];
+    private final IbisIdentifier [] getDestinationArray(int len) {
+        
+        if (destinations == null || destinations.length < len) {         
+            destinations = new IbisIdentifier[len];
+        } 
+        
+        return destinations;
     }
     
     private final byte [] getByteArray(int len) { 
@@ -66,11 +73,12 @@ public class LableRoutingMulticast extends Thread {
         IbisIdentifier sender = null;
         IbisIdentifier [] destinations = null;
         byte [] message = null;
+        int dst;
         
         try {
             sender = (IbisIdentifier) rm.readObject();
             
-            int dst = rm.readInt();
+            dst = rm.readInt();
             
             if (dst > 0) { 
                 destinations = getDestinationArray(dst);
@@ -85,9 +93,9 @@ public class LableRoutingMulticast extends Thread {
             } 
             
             rm.finish();
-            
+
             if (dst > 0) { 
-                send(sender, destinations, message, 0, message.length);
+                send(sender, destinations, dst, message, 0, message.length);
             }
             
         } catch (Exception e) {
@@ -95,12 +103,13 @@ public class LableRoutingMulticast extends Thread {
             e.printStackTrace(System.err);
             return;
         }
-            
+        
+        
         try { 
             receiver.gotMessage(sender, message);
         } catch (Throwable e) {
             System.err.println("Delivery failed! " + e);
-        }        
+        }
     }
     
     public void send(IbisIdentifier [] destinations, byte [] message) {
@@ -125,11 +134,12 @@ public class LableRoutingMulticast extends Thread {
             */           
         }
                         
-        send(ibis.identifier(), destinations, message, off, len);
+        send(ibis.identifier(), destinations, destinations.length, message, 
+                off, len);
     } 
     
-    private void send(IbisIdentifier sender, IbisIdentifier [] destinations, 
-            byte [] message, int off, int len) {
+    private void send(IbisIdentifier sender, IbisIdentifier [] destinations,
+            int numdest, byte [] message, int off, int len) {
       
         if (destinations == null || destinations.length == 0) { 
             return; 
