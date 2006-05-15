@@ -44,7 +44,7 @@ public class LableRoutingMulticast extends Thread {
         this.changeOrder = changeOrder;
                 
         StaticProperties s = new StaticProperties();
-        s.add("Serialization", "object");
+        s.add("Serialization", "data");
         s.add("Communication", "ManyToOne, Reliable, ExplicitReceipt");
         
         portType = ibis.createPortType("Ring", s);
@@ -91,7 +91,7 @@ public class LableRoutingMulticast extends Thread {
             if (data > 0) { 
                 rm.readArray(message, 0, data);
             } 
-            
+
             rm.finish();
 
             if (dst > 0) { 
@@ -212,9 +212,9 @@ public class LableRoutingMulticast extends Thread {
             }
         }
         
-        try { 
+        try {            
             WriteMessage wm = sp.newMessage();
-            
+
             wm.writeObject(sender);
             
             wm.writeInt(destinations.length-1);
