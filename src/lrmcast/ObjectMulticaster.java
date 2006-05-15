@@ -46,7 +46,7 @@ public class ObjectMulticaster implements ByteArrayReceiver {
         sin = SerializationBase.createSerializationInput("ibis", bin);        
     }
     
-    public synchronized void gotMessage(IbisIdentifier sender, byte[] message) {
+    public synchronized boolean gotMessage(IbisIdentifier sender, byte[] message) {
         
         LRMCInputStream tmp = (LRMCInputStream) inputStreams.get(sender);
         
@@ -58,7 +58,9 @@ public class ObjectMulticaster implements ByteArrayReceiver {
         }
         
         tmp.addBuffer(message);        
-        //System.err.println("____ got message(" + message.length + ")");       
+        //System.err.println("____ got message(" + message.length + ")");
+        
+        return false;
     }
     
     public long send(IbisIdentifier [] id, Object o) throws IOException {

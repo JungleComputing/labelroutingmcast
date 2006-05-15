@@ -26,11 +26,14 @@ public class LableRoutingMulticast extends Thread {
     private ByteArrayReceiver receiver;
     private final HashMap sendports = new HashMap();    
     private final HashMap diedmachines = new HashMap();
-        
+    private final HashMap senders = new HashMap();
+    
     private boolean mustStop = false;    
     private boolean changeOrder = false;    
     
-    private IbisIdentifier[] destinations = null;
+    private String[] destinations = null;
+    
+    private byte[] data = null;
     
     public LableRoutingMulticast(Ibis ibis, ByteArrayReceiver m) 
         throws IOException, IbisException {
@@ -55,34 +58,42 @@ public class LableRoutingMulticast extends Thread {
         this.start();
     }
     
-    private final IbisIdentifier [] getDestinationArray(int len) {
+    private final String [] getDestinationArray(int len) {
         
         if (destinations == null || destinations.length < len) {         
-            destinations = new IbisIdentifier[len];
+            destinations = new String[len];
         } 
         
         return destinations;
     }
     
-    private final byte [] getByteArray(int len) { 
-        return new byte[len];
+    private final byte [] getByteArray(int len) {
+        
+        if (data == null || data.length < len) {         
+            data = new byte[len];
+        }
+        
+        return data;
     }
     
     private void receive(ReadMessage rm) { 
-        
-        IbisIdentifier sender = null;
-        IbisIdentifier [] destinations = null;
+
+        String sender = null;        
+        String [] destinations = null;
         byte [] message = null;
         int dst;
         
         try {
-            sender = (IbisIdentifier) rm.readObject();
-            
+            sender = rm.readString();
+                        
             dst = rm.readInt();
             
             if (dst > 0) { 
                 destinations = getDestinationArray(dst);
-                rm.readArray(destinations, 0, dst);
+                
+                for (int i=0;i<dst;i++) { 
+                    destinations[i] = rm.readString();
+                }
             }
             
             int data = rm.readInt();        
@@ -104,9 +115,24 @@ public class LableRoutingMulticast extends Thread {
             return;
         }
         
+        IbisIdentifier senderID = (IbisIdentifier) senders.get(sender);
+        
+        if (senderID == null) {
+            try {
+                senderID = ibis.registry().lookupIbis(sender, 1000);
+            } catch (Exception e) {
+                System.err.println("Delivery failed! Cannot find sender " + e);
+                return;
+            }
+            senders.put(sender, senderID);
+        }
         
         try { 
-            receiver.gotMessage(sender, message);
+            boolean reuse = receiver.gotMessage(senderID, message);
+            
+            if (!reuse) { 
+                data = null;
+            }
         } catch (Throwable e) {
             System.err.println("Delivery failed! " + e);
         }
@@ -133,24 +159,21 @@ public class LableRoutingMulticast extends Thread {
             } 
             */           
         }
-                        
-        send(ibis.identifier(), destinations, destinations.length, message, 
-                off, len);
+        
+        String [] tmp = new String[destinations.length];
+        
+        for (int i=0;i<destinations.length;i++) { 
+            tmp[i] = destinations[i].name();
+        }
+
+        send(ibis.identifier().name(), tmp, tmp.length, message, off, len);        
     } 
     
-    private void send(IbisIdentifier sender, IbisIdentifier [] destinations,
-            int numdest, byte [] message, int off, int len) {
-      
-        if (destinations == null || destinations.length == 0) { 
-            return; 
-        }
-        
-        IbisIdentifier id = destinations[0];
-
+    private SendPort getSendPort(String id) { 
         SendPort sp = (SendPort) sendports.get(id);
         
         if (sp == null) {
-            // Where not connect to this ibis yet, so connect and store for 
+            // We're not connect to this ibis yet, so connect and store for 
             // later use.
             
             // Test if the machine died recently to prevent us from trying to 
@@ -173,18 +196,19 @@ public class LableRoutingMulticast extends Thread {
                             + " is still allive, so I'll try again!");
                 } else { 
                     System.err.println("Ignoring " + id + " since it's dead!");
-                    return;
+                    return null;
                 }                
             }
             
             
             boolean failed = false;
             
+            ReceivePortIdentifier tmp = null; 
+                            
             try { 
                 sp = portType.createSendPort();
                 
-                ReceivePortIdentifier tmp = 
-                    ibis.registry().lookupReceivePort("Ring-" + id.name(), 1000);
+                tmp = ibis.registry().lookupReceivePort("Ring-" + id, 1000);
                 
                 if (tmp != null) {                 
                     sp.connect(tmp, 1000);                
@@ -202,34 +226,64 @@ public class LableRoutingMulticast extends Thread {
                 
                 // notify the nameserver that this machine may be dead...
                 try { 
-                    ibis.registry().dead(id);
+                    if (tmp != null) { 
+                        ibis.registry().dead(tmp.ibis());
+                    } 
                     diedmachines.put(id, new Long(System.currentTimeMillis()));                    
                 } catch (Exception e2) {
                     // ignore
                 }
                 
-                return;
+                return null;
             }
         }
+   
+        return sp;
+    }
+    
+    private void sendMessage(SendPort sp, String sender, String [] destinations, 
+            int fromDest, int toDest, byte [] message, int off, int len) 
+            throws IOException { 
         
-        try {            
-            WriteMessage wm = sp.newMessage();
+        WriteMessage wm = sp.newMessage();
+        
+        wm.writeString(sender);
+        
+        //wm.writeInt(destinations.length-1);
+        wm.writeInt(toDest-fromDest);
+        
+        for (int i=fromDest;i<toDest;i++) { 
+            wm.writeString(destinations[i]);
+        } 
+        
+        wm.writeInt(len);                
+        
+        if (len > 0) { 
+            wm.writeArray(message, off, len);
+        }              
+        
+        wm.finish();
+    }
+    
+    private void send(String sender, String [] destinations,
+            int numdest, byte [] message, int off, int len) {
+      
+        if (destinations == null || destinations.length == 0) { 
+            return; 
+        }
+        
+        String id = destinations[0];
 
-            wm.writeObject(sender);
-            
-            wm.writeInt(destinations.length-1);
-            
-            if (destinations.length > 1) {             
-                wm.writeArray(destinations, 1, destinations.length-1);
-            } 
-            
-            wm.writeInt(len);                
-            
-            if (len > 0) { 
-                wm.writeArray(message, off, len);
-            }              
-            
-            wm.finish();
+        SendPort sp = getSendPort(id);
+        
+        if (sp == null) { 
+            // it's dead Jim!
+            return;
+        }
+        
+        try { 
+            sendMessage(sp, sender, destinations, 1, destinations.length, 
+                    message, off, len);
         } catch (IOException e) {
             System.err.println("Write to " + id + " failed!");            
             sendports.remove(id);            

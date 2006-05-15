@@ -92,12 +92,14 @@ public class Test1 extends TestBase implements ByteArrayReceiver {
         System.out.println("Test took " + time + " ms. TP = " + tp + " MB/s.");
     }
         
-    public synchronized void gotMessage(IbisIdentifier sender, byte[] message) {
+    public synchronized boolean gotMessage(IbisIdentifier sender, byte[] message) {
         receivedMessages++;
         
         if (ring && receivedMessages == count) { 
             notifyAll();
         }
+        
+        return true;
     }
     
     public static void main(String [] args) {
