@@ -27,7 +27,9 @@ public class ObjectMulticaster implements ByteArrayReceiver {
     private LinkedList available = new LinkedList();
     
     private long totalData = 0;
-        
+
+    private int currentID = 0;
+    
     public ObjectMulticaster(Ibis ibis) throws IOException, IbisException { 
         this(ibis, false);
     }
@@ -46,7 +48,8 @@ public class ObjectMulticaster implements ByteArrayReceiver {
         sin = SerializationBase.createSerializationInput("ibis", bin);        
     }
     
-    public synchronized boolean gotMessage(IbisIdentifier sender, byte[] message) {
+    public synchronized boolean gotMessage(String sender, int id, 
+            byte[] message) {
         
         LRMCInputStream tmp = (LRMCInputStream) inputStreams.get(sender);
         
@@ -57,8 +60,9 @@ public class ObjectMulticaster implements ByteArrayReceiver {
             notifyAll();
         }
         
-        tmp.addBuffer(message);        
-        //System.err.println("____ got message(" + message.length + ")");
+        tmp.addBuffer(id, message);        
+        
+      // System.err.println("____ got message from " + sender);
         
         return false;
     }
@@ -69,9 +73,12 @@ public class ObjectMulticaster implements ByteArrayReceiver {
         // reset the count.
         bout.resetBytesWritten();
         
+        // set the target ibises
         os.setTarget(id);
+        
+        // write the object and reset the stream
         sout.writeObject(o);
-        sout.reset(true);
+        sout.reset(true);      
         sout.flush();
 
         totalData += bout.bytesWritten();

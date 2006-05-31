@@ -20,7 +20,9 @@
 	<javac 	classpath="${external.classpath}"
 		destdir="${builddir}"
                 srcdir="${srcdir}"
+                debug="true"
                 includes="**/*.java"/>
+
 
         <java   classpath="${external.classpath}:${builddir}"
                 classname="ibis.frontend.io.IOGenerator"

@@ -42,22 +42,28 @@ public class Test5 extends TestBase {
             try { 
                 while (true) { 
 
-                    Object tmp = omc.receive();                      
-                    bytes += omc.bytesRead();
+                    try { 
+                        Object tmp = omc.receive();                      
+                        bytes += omc.bytesRead();
                     
-                    if (tmp == null) {
-                        if (machineDone()) { 
-                            System.out.println("Done!");
-                            System.out.println("Got " + messages + " messages");
-                            System.out.println("  (" + (bytes/(1024*1024)) + " MB)");
-                            return;
-                        }
-                    }  
+                        if (tmp == null) {
+                            if (machineDone()) { 
+                                System.out.println("Done!");
+                                System.out.println("Got " + messages + " messages");
+                                System.out.println("  (" + (bytes/(1024*1024)) + " MB)");
+                                return;
+                            }
+                        }  
                     
-                    messages++;
+                        messages++;
+                    } catch (Exception e) { 
+                        System.out.println("A receive failed");   
+                    }
                 }                        
             } catch (Exception e) {
                 System.out.println("Oops, receiver died!" + e);
+                e.printStackTrace();
+                System.exit(1);
             }
         }         
     }

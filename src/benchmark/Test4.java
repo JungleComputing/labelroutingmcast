@@ -92,8 +92,12 @@ public class Test4 extends TestBase {
         long start = System.currentTimeMillis();
         
         for (int c=0;c<count;c++) {
-            dd = (DoubleData) omc.receive();
-            size += dd.getSize();
+            try { 
+                dd = (DoubleData) omc.receive();
+                size += dd.getSize();
+            } catch (Exception e) { 
+                System.err.println("Receive failed: " + e);
+            }
         }
         
         long end = System.currentTimeMillis();

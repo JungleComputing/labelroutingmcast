@@ -1,7 +1,7 @@
 package lrmcast;
 
-import ibis.ipl.IbisIdentifier;
+//import ibis.ipl.IbisIdentifier;
 
 public interface ByteArrayReceiver {
-    public boolean gotMessage(IbisIdentifier sender, byte [] message);    
+    public boolean gotMessage(String sender, int id, byte [] message);    
 }

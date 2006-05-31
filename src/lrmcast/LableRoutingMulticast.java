@@ -26,7 +26,7 @@ public class LableRoutingMulticast extends Thread {
     private ByteArrayReceiver receiver;
     private final HashMap sendports = new HashMap();    
     private final HashMap diedmachines = new HashMap();
-    private final HashMap senders = new HashMap();
+  //  private final HashMap senders = new HashMap();
     
     private boolean mustStop = false;    
     private boolean changeOrder = false;    
@@ -82,6 +82,7 @@ public class LableRoutingMulticast extends Thread {
         String [] destinations = null;
         byte [] message = null;
         int dst;
+        int id;
         
         try {
             sender = rm.readString();
@@ -96,6 +97,8 @@ public class LableRoutingMulticast extends Thread {
                 }
             }
             
+            id = rm.readInt();
+            
             int data = rm.readInt();        
             message = getByteArray(data);            
             
@@ -106,7 +109,7 @@ public class LableRoutingMulticast extends Thread {
             rm.finish();
 
             if (dst > 0) { 
-                send(sender, destinations, dst, message, 0, message.length);
+                send(sender, destinations, dst, id, message, 0, message.length);
             }
             
         } catch (Exception e) {
@@ -114,7 +117,7 @@ public class LableRoutingMulticast extends Thread {
             e.printStackTrace(System.err);
             return;
         }
-        
+      /*  
         IbisIdentifier senderID = (IbisIdentifier) senders.get(sender);
         
         if (senderID == null) {
@@ -124,11 +127,17 @@ public class LableRoutingMulticast extends Thread {
                 System.err.println("Delivery failed! Cannot find sender " + e);
                 return;
             }
+                        
             senders.put(sender, senderID);
         }
         
+        if (senderID == null) { 
+            System.err.println("Delivery failed! Cannot find sender for " + sender);
+            return;
+        }
+        */
         try { 
-            boolean reuse = receiver.gotMessage(senderID, message);
+            boolean reuse = receiver.gotMessage(sender, id, message);
             
             if (!reuse) { 
                 data = null;
@@ -138,12 +147,13 @@ public class LableRoutingMulticast extends Thread {
         }
     }
     
-    public void send(IbisIdentifier [] destinations, byte [] message) {
-        send(destinations, message, 0, message.length);
+    public void send(IbisIdentifier [] destinations, int id, byte [] message) {
+        send(destinations, id, message, 0, message.length);
     } 
     
     
-    public void send(IbisIdentifier [] destinations, byte [] message, int off, int len) {
+    public void send(IbisIdentifier [] destinations, int id, byte [] message, 
+            int off, int len) {
         
         if (changeOrder) { 
             // We are allowed to change the order of machines in the destination
@@ -166,7 +176,8 @@ public class LableRoutingMulticast extends Thread {
             tmp[i] = destinations[i].name();
         }
 
-        send(ibis.identifier().name(), tmp, tmp.length, message, off, len);        
+        send(ibis.identifier().name(), tmp, tmp.length, id, message, off,
+                len);        
     } 
     
     private SendPort getSendPort(String id) { 
@@ -227,13 +238,18 @@ public class LableRoutingMulticast extends Thread {
                 // notify the nameserver that this machine may be dead...
                 try { 
                     if (tmp != null) { 
-                        ibis.registry().dead(tmp.ibis());
+                        ibis.registry().maybeDead(tmp.ibis());
                     } 
                     diedmachines.put(id, new Long(System.currentTimeMillis()));                    
                 } catch (Exception e2) {
+                    
+                    System.err.println("Failed to inform nameserver! " + e2);
+                    
                     // ignore
                 }
                 
+                System.err.println("Done informing nameserver");
+                                
                 return null;
             }
         }
@@ -242,8 +258,10 @@ public class LableRoutingMulticast extends Thread {
     }
     
     private void sendMessage(SendPort sp, String sender, String [] destinations, 
-            int fromDest, int toDest, byte [] message, int off, int len) 
-            throws IOException { 
+            int fromDest, int toDest, int messageID, byte [] message, int off,
+            int len) throws IOException { 
+        
+       // System.err.println("____ sendMessage(" + messageID + ", byte[" + len + "])");
         
         WriteMessage wm = sp.newMessage();
         
@@ -256,6 +274,8 @@ public class LableRoutingMulticast extends Thread {
             wm.writeString(destinations[i]);
         } 
         
+        wm.writeInt(messageID);
+        
         wm.writeInt(len);                
         
         if (len > 0) { 
@@ -266,7 +286,7 @@ public class LableRoutingMulticast extends Thread {
     }
     
     private void send(String sender, String [] destinations,
-            int numdest, byte [] message, int off, int len) {
+            int numdest, int messageID, byte [] message, int off, int len) {
       
         if (destinations == null || destinations.length == 0) { 
             return; 
@@ -283,7 +303,7 @@ public class LableRoutingMulticast extends Thread {
         
         try { 
             sendMessage(sp, sender, destinations, 1, destinations.length, 
-                    message, off, len);
+                    messageID, message, off, len);
         } catch (IOException e) {
             System.err.println("Write to " + id + " failed!");            
             sendports.remove(id);            

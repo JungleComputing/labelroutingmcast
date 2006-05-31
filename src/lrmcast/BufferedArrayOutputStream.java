@@ -6,7 +6,6 @@ import ibis.io.Conversion;
 import ibis.io.DataOutputStream;
 
 import java.io.IOException;
-import java.io.OutputStream;
 
 /**
  * This is a complete implementation of <code>DataOutputStream</code>.
@@ -34,7 +33,7 @@ public final class BufferedArrayOutputStream extends DataOutputStream {
     private static final int BUF_SIZE = 32*1024;
 
     /** The underlying <code>OutputStream</code>. */
-    private OutputStream out;
+    private LRMCOutputStream out;
 
     /** The buffer in which output data is collected. */
     private byte[] buffer = new byte[BUF_SIZE];
@@ -52,7 +51,7 @@ public final class BufferedArrayOutputStream extends DataOutputStream {
      * Constructor.
      * @param out	the underlying <code>OutputStream</code>
      */
-    public BufferedArrayOutputStream(OutputStream out) {
+    public BufferedArrayOutputStream(LRMCOutputStream out) {
         this.out = out;
         conversion = Conversion.loadConversion(false);
     }
@@ -70,16 +69,17 @@ public final class BufferedArrayOutputStream extends DataOutputStream {
      * the buffer is written to the underlying <code>OutputStream</code>.
      *
      * @param incr		the space requested
+     * @param forced TODO
      * @exception IOException	in case of trouble.
      */
-    private void flush(int incr) throws IOException {
+    private void flush(int incr, boolean forced) throws IOException {
 
         if (DEBUG) {
             System.err.println("flush(" + incr + ") : " + " "
                     + (index + incr >= BUF_SIZE) + " " + (index) + ")");
         }
 
-        if (index + incr > BUF_SIZE) {
+        if (forced || index + incr > BUF_SIZE) {
             bytes += index;
 
             // System.err.print("fflushing [");
@@ -88,7 +88,7 @@ public final class BufferedArrayOutputStream extends DataOutputStream {
             // }
             // System.err.println("] " + bytes);
 
-            out.write(buffer, 0, index);
+            out.write(buffer, 0, index, forced);
             index = 0;
         }
     }
@@ -99,47 +99,47 @@ public final class BufferedArrayOutputStream extends DataOutputStream {
 
     public void writeBoolean(boolean value) throws IOException {
         byte b = conversion.boolean2byte(value);
-        flush(1);
+        flush(1, false);
         buffer[index++] = b;
     }
 
     public void writeByte(byte value) throws IOException {
-        flush(1);
+        flush(1, false);
         buffer[index++] = value;
     }
 
     public void writeChar(char value) throws IOException {
-        flush(SIZEOF_CHAR);
+        flush(SIZEOF_CHAR, false);
         conversion.char2byte(value, buffer, index);
         index += SIZEOF_CHAR;
     }
 
     public void writeShort(short value) throws IOException {
-        flush(SIZEOF_SHORT);
+        flush(SIZEOF_SHORT, false);
         conversion.short2byte(value, buffer, index);
         index += SIZEOF_SHORT;
     }
 
     public void writeInt(int value) throws IOException {
-        flush(SIZEOF_INT);
+        flush(SIZEOF_INT, false);
         conversion.int2byte(value, buffer, index);
         index += SIZEOF_INT;
     }
 
     public void writeLong(long value) throws IOException {
-        flush(SIZEOF_LONG);
+        flush(SIZEOF_LONG, false);
         conversion.long2byte(value, buffer, index);
         index += SIZEOF_LONG;
     }
 
     public void writeFloat(float value) throws IOException {
-        flush(SIZEOF_FLOAT);
+        flush(SIZEOF_FLOAT, false);
         conversion.float2byte(value, buffer, index);
         index += SIZEOF_FLOAT;
     }
 
     public void writeDouble(double value) throws IOException {
-        flush(SIZEOF_DOUBLE);
+        flush(SIZEOF_DOUBLE, false);
         conversion.double2byte(value, buffer, index);
         index += SIZEOF_DOUBLE;
     }
@@ -160,7 +160,7 @@ public final class BufferedArrayOutputStream extends DataOutputStream {
         }
 
         do {
-            flush(1);
+            flush(1, false);
 
             int size = Math.min(BUF_SIZE - index, len);
 
@@ -193,7 +193,7 @@ public final class BufferedArrayOutputStream extends DataOutputStream {
             off += space;
             
             // force flush
-            flush(BUF_SIZE+1);
+            flush(BUF_SIZE+1, false);
         }
         
         if (len > 0) {
@@ -213,7 +213,7 @@ public final class BufferedArrayOutputStream extends DataOutputStream {
         }
 
         do {
-            flush(SIZEOF_CHAR);
+            flush(SIZEOF_CHAR, false);
 
             int size = Math.min((BUF_SIZE - index) / SIZEOF_CHAR, len);
 
@@ -234,7 +234,7 @@ public final class BufferedArrayOutputStream extends DataOutputStream {
         }
 
         do {
-            flush(SIZEOF_SHORT);
+            flush(SIZEOF_SHORT, false);
 
             int size = Math.min((BUF_SIZE - index) / SIZEOF_SHORT, len);
 
@@ -259,7 +259,7 @@ public final class BufferedArrayOutputStream extends DataOutputStream {
         }
 
         do {
-            flush(SIZEOF_INT);
+            flush(SIZEOF_INT, false);
 
             int size = Math.min((BUF_SIZE - index) / SIZEOF_INT, len);
 
@@ -284,7 +284,7 @@ public final class BufferedArrayOutputStream extends DataOutputStream {
         }
 
         do {
-            flush(SIZEOF_LONG);
+            flush(SIZEOF_LONG, false);
 
             int size = Math.min((BUF_SIZE - index) / SIZEOF_LONG, len);
 
@@ -304,7 +304,7 @@ public final class BufferedArrayOutputStream extends DataOutputStream {
                     + (off + len) + "])");
         }
         do {
-            flush(SIZEOF_FLOAT);
+            flush(SIZEOF_FLOAT, false);
 
             int size = Math.min((BUF_SIZE - index) / SIZEOF_FLOAT, len);
 
@@ -325,7 +325,7 @@ public final class BufferedArrayOutputStream extends DataOutputStream {
         }
 
         do {
-            flush(SIZEOF_DOUBLE);
+            flush(SIZEOF_DOUBLE, false);
 
             int size = Math.min((BUF_SIZE - index) / SIZEOF_DOUBLE, len);
 
@@ -340,9 +340,9 @@ public final class BufferedArrayOutputStream extends DataOutputStream {
 
     public void flush() throws IOException {
         
-        //System.err.println(" ____ flush()");
+        //System.err.println(" ____ forced flush()");
         
-        flush(BUF_SIZE + 1); /* Forces flush */
+        flush(BUF_SIZE + 1, true); /* Forces flush */
         out.flush();
     }
 
