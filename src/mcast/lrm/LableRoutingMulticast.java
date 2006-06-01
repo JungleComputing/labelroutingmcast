@@ -1,4 +1,4 @@
-package lrmcast;
+package mcast.lrm;
 
 import java.io.IOException;
 import java.util.HashMap;

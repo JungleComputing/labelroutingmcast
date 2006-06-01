@@ -1,9 +1,11 @@
-package lrmcast;
+package mcast.object2;
 
 import ibis.ipl.IbisIdentifier;
 
 import java.io.IOException;
 import java.io.OutputStream;
+
+import mcast.lrm.LableRoutingMulticast;
 
 public class LRMCOutputStream extends OutputStream implements LRMCStreamConstants {
 

@@ -3,7 +3,7 @@ package benchmark;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import lrmcast.IbisSorter;
+import mcast.lrm.IbisSorter;
 
 import ibis.ipl.*;
 

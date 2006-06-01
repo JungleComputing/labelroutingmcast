@@ -5,8 +5,8 @@ import ibis.ipl.IbisIdentifier;
 
 import java.io.IOException;
 
-import lrmcast.ByteArrayReceiver;
-import lrmcast.LableRoutingMulticast;
+import mcast.lrm.ByteArrayReceiver;
+import mcast.lrm.LableRoutingMulticast;
 
 /**
  * In this test a single sender sends a byte[] using the LableRoutingMulticast.

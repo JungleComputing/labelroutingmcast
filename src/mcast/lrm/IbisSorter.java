@@ -1,4 +1,4 @@
-package lrmcast;
+package mcast.lrm;
 
 import java.util.Comparator;
 import java.util.Arrays;

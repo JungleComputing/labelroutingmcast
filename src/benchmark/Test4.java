@@ -1,7 +1,8 @@
 package benchmark;
 
 import java.io.IOException;
-import lrmcast.ObjectMulticaster;
+
+import mcast.object.ObjectMulticaster;
 
 import ibis.ipl.*;
 

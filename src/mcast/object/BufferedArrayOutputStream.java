@@ -1,6 +1,6 @@
 /* $Id: BufferedArrayOutputStream.java 3035 2005-06-15 13:52:54Z ceriel $ */
 
-package lrmcast;
+package mcast.object;
 
 import ibis.io.Conversion;
 import ibis.io.DataOutputStream;

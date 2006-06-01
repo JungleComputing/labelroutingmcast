@@ -1,8 +1,11 @@
-package lrmcast;
+package mcast.object2;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
+
+import mcast.lrm.ByteArrayReceiver;
+import mcast.lrm.LableRoutingMulticast;
 
 import ibis.ipl.Ibis;
 import ibis.io.SerializationBase;
@@ -11,7 +14,7 @@ import ibis.io.SerializationOutput;
 import ibis.ipl.IbisException;
 import ibis.ipl.IbisIdentifier;
 
-public class ObjectMulticaster implements ByteArrayReceiver {
+public class ObjectMulticaster implements ByteArrayReceiver, ObjectReceiver {
    
     private LableRoutingMulticast lrmc; 
     
@@ -26,9 +29,9 @@ public class ObjectMulticaster implements ByteArrayReceiver {
     private HashMap inputStreams = new HashMap(); 
     private LinkedList available = new LinkedList();
     
+    private LinkedList objects = new LinkedList();
+        
     private long totalData = 0;
-
-    private int currentID = 0;
     
     public ObjectMulticaster(Ibis ibis) throws IOException, IbisException { 
         this(ibis, false);
@@ -54,7 +57,7 @@ public class ObjectMulticaster implements ByteArrayReceiver {
         LRMCInputStream tmp = (LRMCInputStream) inputStreams.get(sender);
         
         if (tmp == null) {
-            tmp = new LRMCInputStream(sender);
+            tmp = new LRMCInputStream(sender, this);
             inputStreams.put(sender, tmp);           
             available.addLast(sender);
             notifyAll();
@@ -85,19 +88,6 @@ public class ObjectMulticaster implements ByteArrayReceiver {
         
         return bout.bytesWritten();
     }
-   
-    private synchronized LRMCInputStream getNextFilledStream() {
-
-        while (available.size() == 0) { 
-            try { 
-                wait();
-            } catch (Exception e) {
-                // ignore
-            }            
-        }
-        
-        return (LRMCInputStream) inputStreams.get(available.removeFirst());
-    }
     
     private synchronized void returnStreams(LRMCInputStream stream) { 
 
@@ -110,43 +100,17 @@ public class ObjectMulticaster implements ByteArrayReceiver {
         }
     }
         
-    public Object receive() throws IOException, ClassNotFoundException {
+    public synchronized Object receive() throws IOException, ClassNotFoundException {
         
-        Object result = null; 
-        IOException ioe = null;
-        ClassNotFoundException cnfe = null;
-        
-        // Get the next stream that has some data
-        LRMCInputStream stream = getNextFilledStream(); 
-        
-        // Plug it into the deserializer
-        bin.setInputStream(stream);
-        bin.resetBytesRead();
-        
-        // Read an object
-        try { 
-            result = sin.readObject();
-        } catch (IOException e1) {
-            ioe = e1;
-        } catch (ClassNotFoundException e2) {
-            cnfe = e2;
+        while (objects.size() == 0) { 
+            try { 
+                wait();
+            } catch (Exception e) {
+                // TODO: handle exception
+            }
         }
         
-        // Return the stream to the queue (if necessary) 
-        returnStreams(stream);
-     
-        totalData += bin.bytesRead();
-                
-        // return the 'result' (exception or otherwise...)
-        if (ioe != null) { 
-            throw ioe;
-        }        
-        
-        if (cnfe != null) { 
-            throw cnfe;
-        }                        
-        
-        return result;
+        return objects.removeFirst();
     }
     
     public long bytesRead() { 
@@ -172,5 +136,31 @@ public class ObjectMulticaster implements ByteArrayReceiver {
         } catch (IOException e) {
             // ignore, we tried ...
         }
+    }
+
+    public synchronized void haveObject(LRMCInputStream stream) {
+
+        Object result = null; 
+        boolean succes = true;
+        
+        // Plug it into the deserializer
+        bin.setInputStream(stream);
+        bin.resetBytesRead();
+        
+        // Read an object
+        try { 
+            result = sin.readObject();
+        } catch (Exception e) {
+            succes = false;
+        }
+        
+        // Return the stream to the queue (if necessary) 
+        returnStreams(stream);     
+        totalData += bin.bytesRead();
+
+        if (succes) { 
+            objects.addLast(result);
+            notifyAll();
+        }       
     }
 }

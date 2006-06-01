@@ -1,4 +1,4 @@
-package lrmcast;
+package mcast.lrm;
 
 //import ibis.ipl.IbisIdentifier;
 

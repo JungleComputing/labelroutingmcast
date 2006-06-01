@@ -1,4 +1,4 @@
-package lrmcast;
+package mcast.object2;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -6,7 +6,8 @@ import java.io.InputStream;
 public class LRMCInputStream extends InputStream implements LRMCStreamConstants {
     
     private String source;       
-        
+    private ObjectReceiver receiver;    
+    
     private Buffer current = null; 
     private int index = 0;
     private int currentID = 0;    
@@ -32,8 +33,9 @@ public class LRMCInputStream extends InputStream implements LRMCStreamConstants 
         }
     }
         
-    public LRMCInputStream(String source) { 
+    public LRMCInputStream(String source, ObjectReceiver receiver) { 
         this.source = source;
+        this.receiver = receiver;
     }
     
     public String getSource() { 
@@ -78,9 +80,13 @@ public class LRMCInputStream extends InputStream implements LRMCStreamConstants 
                 (firstPacket ? "F" : " ") + (lastPacket ? "L" : " ") + 
                 " byte[" + buffer.length + "]");
         */        
-        addBuffer(id, firstPacket, lastPacket, buffer);
-                
+        addBuffer(id, firstPacket, lastPacket, buffer);        
+
         memoryUsage += buffer.length;
+        
+        if (lastPacket) { 
+            receiver.haveObject(this);
+        }        
     }
         
     private synchronized void getBuffer() { 
@@ -127,8 +133,8 @@ public class LRMCInputStream extends InputStream implements LRMCStreamConstants 
                 
             currentID = current.id;
     
-            System.err.println("____ Current memory usage " + 
-                    (memoryUsage/(1024*1024)) + " MB");
+       //     System.err.println("____ Current memory usage " + 
+       //             (memoryUsage/(1024*1024)) + " MB");
             
         } else if (currentID != current.id) {                      
             // Oh dear, we seem to have missed the end of a series of packets. 
