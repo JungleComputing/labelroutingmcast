@@ -12,7 +12,8 @@ public class LRMCOutputStream extends OutputStream implements LRMCStreamConstant
     private LableRoutingMulticast mcast;
     private IbisIdentifier [] target; 
     
-    private int currentID = 0;  
+    private int currentID = 0;
+    private int currentNUM = 0;
     
     private boolean closed = false;    
     private boolean firstPacket = false;
@@ -46,13 +47,14 @@ public class LRMCOutputStream extends OutputStream implements LRMCStreamConstant
        if (firstPacket) {
            firstPacket = false;
            id = id | FIRST_PACKET;
-       }
+           currentNUM = 0;
+       } 
        
        if (lastPacket) { 
            id = id | LAST_PACKET;
        }
        
-       mcast.send(target, id, b, off, len);
+       mcast.send(target, id, currentNUM++, b, off, len);
        
     //   System.err.println("____ done write(" + off + ", " + len + ")");       
     }

@@ -49,7 +49,7 @@ public class ObjectMulticaster implements ByteArrayReceiver {
         sin = SerializationBase.createSerializationInput("ibis", bin);        
     }
     
-    public synchronized boolean gotMessage(String sender, int id, 
+    public synchronized boolean gotMessage(String sender, int id, int num, 
             byte[] message) {
         
         LRMCInputStream tmp = (LRMCInputStream) inputStreams.get(sender);
@@ -61,7 +61,7 @@ public class ObjectMulticaster implements ByteArrayReceiver {
             notifyAll();
         }
         
-        tmp.addBuffer(id, message);        
+        tmp.addBuffer(id, num, message);        
         
       // System.err.println("____ got message from " + sender);
         
@@ -78,8 +78,8 @@ public class ObjectMulticaster implements ByteArrayReceiver {
         os.setTarget(id);
         
         // write the object and reset the stream
+        sout.reset(true);              
         sout.writeObject(o);
-        sout.reset(true);      
         sout.flush();
 
         totalData += bout.bytesWritten();

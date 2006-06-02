@@ -83,6 +83,7 @@ public class LableRoutingMulticast extends Thread {
         byte [] message = null;
         int dst;
         int id;
+        int num;
         
         try {
             sender = rm.readString();
@@ -98,6 +99,7 @@ public class LableRoutingMulticast extends Thread {
             }
             
             id = rm.readInt();
+            num = rm.readInt();
             
             int data = rm.readInt();        
             message = getByteArray(data);            
@@ -109,7 +111,7 @@ public class LableRoutingMulticast extends Thread {
             rm.finish();
 
             if (dst > 0) { 
-                send(sender, destinations, dst, id, message, 0, message.length);
+                send(sender, destinations, dst, id, num, message, 0, message.length);
             }
             
         } catch (Exception e) {
@@ -137,7 +139,7 @@ public class LableRoutingMulticast extends Thread {
         }
         */
         try { 
-            boolean reuse = receiver.gotMessage(sender, id, message);
+            boolean reuse = receiver.gotMessage(sender, id, num, message);
             
             if (!reuse) { 
                 data = null;
@@ -147,13 +149,13 @@ public class LableRoutingMulticast extends Thread {
         }
     }
     
-    public void send(IbisIdentifier [] destinations, int id, byte [] message) {
-        send(destinations, id, message, 0, message.length);
+    public void send(IbisIdentifier [] destinations, int id, int num, byte [] message) {
+        send(destinations, id, num, message, 0, message.length);
     } 
     
     
-    public void send(IbisIdentifier [] destinations, int id, byte [] message, 
-            int off, int len) {
+    public void send(IbisIdentifier [] destinations, int id, int num, 
+            byte [] message, int off, int len) {
         
         if (changeOrder) { 
             // We are allowed to change the order of machines in the destination
@@ -176,7 +178,7 @@ public class LableRoutingMulticast extends Thread {
             tmp[i] = destinations[i].name();
         }
 
-        send(ibis.identifier().name(), tmp, tmp.length, id, message, off,
+        send(ibis.identifier().name(), tmp, tmp.length, id, num, message, off,
                 len);        
     } 
     
@@ -206,7 +208,7 @@ public class LableRoutingMulticast extends Thread {
                     System.err.println("Sender insists that " + id  
                             + " is still allive, so I'll try again!");
                 } else { 
-                    System.err.println("Ignoring " + id + " since it's dead!");
+                    //System.err.println("Ignoring " + id + " since it's dead!");
                     return null;
                 }                
             }
@@ -258,8 +260,8 @@ public class LableRoutingMulticast extends Thread {
     }
     
     private void sendMessage(SendPort sp, String sender, String [] destinations, 
-            int fromDest, int toDest, int messageID, byte [] message, int off,
-            int len) throws IOException { 
+            int fromDest, int toDest, int messageID, int messageNum, 
+            byte [] message, int off, int len) throws IOException { 
         
        // System.err.println("____ sendMessage(" + messageID + ", byte[" + len + "])");
         
@@ -275,6 +277,7 @@ public class LableRoutingMulticast extends Thread {
         } 
         
         wm.writeInt(messageID);
+        wm.writeInt(messageNum);
         
         wm.writeInt(len);                
         
@@ -286,7 +289,8 @@ public class LableRoutingMulticast extends Thread {
     }
     
     private void send(String sender, String [] destinations,
-            int numdest, int messageID, byte [] message, int off, int len) {
+            int numdest, int messageID, int messageNum, byte [] message, 
+            int off, int len) {
       
         if (destinations == null || destinations.length == 0) { 
             return; 
@@ -303,7 +307,7 @@ public class LableRoutingMulticast extends Thread {
         
         try { 
             sendMessage(sp, sender, destinations, 1, destinations.length, 
-                    messageID, message, off, len);
+                    messageID, messageNum, message, off, len);
         } catch (IOException e) {
             System.err.println("Write to " + id + " failed!");            
             sendports.remove(id);            

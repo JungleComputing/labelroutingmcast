@@ -15,23 +15,9 @@ public class LRMCInputStream extends InputStream implements LRMCStreamConstants 
     
     private Buffer head;
     private Buffer tail;
-            
-    private class Buffer { 
-        final int id;         
-        final boolean first; 
-        final boolean last;
-        final byte [] buffer;
-        
-        Buffer next;
-        
-        Buffer(int id, boolean first, boolean last, byte [] buffer) { 
-            this.id = id;
-            this.first = first;
-            this.last = last;
-            this.buffer = buffer;
-        }
-    }
-        
+   
+    private static BufferCache cache = new BufferCache(1000);
+    
     public LRMCInputStream(String source) { 
         this.source = source;
     }
@@ -41,14 +27,16 @@ public class LRMCInputStream extends InputStream implements LRMCStreamConstants 
     }
     
     public boolean haveData() {  
-        return (head != null);
+        return (head != null) || 
+            (current != null && index < current.buffer.length) ;
     }
     
-    private synchronized void addBuffer(int id, boolean first, boolean last, 
+    private synchronized void addBuffer(int id, int num, boolean last, 
             byte [] buffer) { 
         
         // TODO: cache these ?
-        Buffer tmp = new Buffer(id, first, last, buffer);
+        Buffer tmp = cache.get();
+        tmp.set(id, num, last, buffer);
         
         if (head == null) { 
             head = tail = tmp;
@@ -59,26 +47,20 @@ public class LRMCInputStream extends InputStream implements LRMCStreamConstants 
         }
     }
     
-    public void addBuffer(int id, byte [] buffer) {
+    public void addBuffer(int id, int num, byte [] buffer) {
         
-        boolean firstPacket = false;
         boolean lastPacket = false;
         
-        if ((id & FIRST_PACKET) != 0) { 
-            firstPacket = true;
-            id = id & ~FIRST_PACKET;
-        } 
-            
-        if ((id & LAST_PACKET) != 0) { 
+        if ((num & LAST_PACKET) != 0) { 
             lastPacket = true;
-            id = id & ~LAST_PACKET;
+            num = num & ~LAST_PACKET;
         } 
         
       /*  System.err.println("___ Got packet (" + source + ") " + id + 
                 (firstPacket ? "F" : " ") + (lastPacket ? "L" : " ") + 
                 " byte[" + buffer.length + "]");
         */        
-        addBuffer(id, firstPacket, lastPacket, buffer);
+        addBuffer(id, num, lastPacket, buffer);
                 
         memoryUsage += buffer.length;
     }
@@ -110,7 +92,7 @@ public class LRMCInputStream extends InputStream implements LRMCStreamConstants 
             // We must start a new series of buffers here. Each series 
             // corresponds to a 'multi fragment' message.
                
-            while (!current.first) {
+            while (current.num != 0) {
                 // Oh dear, we seem to have missed the start of a series of
                 // packets. We may have lost a message somewhere (which is 
                 // unlikely) or the last receive failed half way due to some
@@ -118,9 +100,9 @@ public class LRMCInputStream extends InputStream implements LRMCStreamConstants 
                 // (this is more likely). To solve this, we simply drop the 
                 // current packet and get a new one. We keep trying until we see
                 // a 'first packet'.                    
-                System.err.println("___ Dropping packet " + current.id + 
-                        " byte[" + current.buffer.length + "] since it's" +
-                        " not the first one!");                
+                System.err.println("___ Dropping packet " + current.id + "/" + 
+                        current.num + " [" + current.buffer.length + "] " +
+                                "since it's not the first one!");                
                 freeBuffer();
                 getBuffer();
             } 
@@ -128,7 +110,7 @@ public class LRMCInputStream extends InputStream implements LRMCStreamConstants 
             currentID = current.id;
     
             System.err.println("____ Current memory usage " + 
-                    (memoryUsage/(1024*1024)) + " MB");
+                    (memoryUsage/1024) + " KB, series " + currentID);
             
         } else if (currentID != current.id) {                      
             // Oh dear, we seem to have missed the end of a series of packets. 
@@ -146,7 +128,7 @@ public class LRMCInputStream extends InputStream implements LRMCStreamConstants 
             // handled the exception and tries to receive again
             String tmp = "Inconsistency discovered in multicast packet series," 
                     + " current series " + currentID + " next packet " 
-                    + current.id;
+                    + current.id + "/" + current.num;
             
             currentID = 0;                        
             throw new IOException(tmp);
@@ -162,7 +144,7 @@ public class LRMCInputStream extends InputStream implements LRMCStreamConstants 
         
         memoryUsage -= current.buffer.length;
 
-        // TODO: recycle buffer ? 
+        cache.put(current);        
         current = null;
     }
     

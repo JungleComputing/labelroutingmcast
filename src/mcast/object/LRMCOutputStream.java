@@ -13,7 +13,8 @@ public class LRMCOutputStream extends OutputStream implements LRMCStreamConstant
     private IbisIdentifier [] target; 
     
     private int currentID = 0;  
-    
+    private int currentNUM = 0;  
+        
     private boolean closed = false;    
     private boolean firstPacket = false;
     
@@ -41,19 +42,18 @@ public class LRMCOutputStream extends OutputStream implements LRMCStreamConstant
         
 //       System.err.println("____ got write(" + currentID + ", byte[" + len + "])");
         
-       int id = currentID;
-       
        if (firstPacket) {
            firstPacket = false;
-           id = id | FIRST_PACKET;
+           currentNUM = 0;
+       } else { 
+           currentNUM++;
        }
        
        if (lastPacket) { 
-           id = id | LAST_PACKET;
+           mcast.send(target, currentID++, currentNUM | LAST_PACKET, b, off, len);
+       } else { 
+           mcast.send(target, currentID++, currentNUM, b, off, len);
        }
-       
-       mcast.send(target, id, b, off, len);
-       
     //   System.err.println("____ done write(" + off + ", " + len + ")");       
     }
     

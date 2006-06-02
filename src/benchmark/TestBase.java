@@ -81,6 +81,12 @@ public class TestBase implements ResizeHandler {
         
         if (destinations == null || participantsChanged) {
             
+            if (participants.size() == 0) { 
+                System.err.print("EEK: don't have any participants left ?!!");
+                System.err.print("EEK: where am I then ?!!!!");
+                System.exit(1);
+            }
+            
             int size = participants.size()-1;
             
             if (ring) { 

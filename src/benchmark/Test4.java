@@ -111,7 +111,7 @@ public class Test4 extends TestBase {
                     + tp + " MB/s.");
         } 
         
-        return (dd.iteration < repeat);     
+        return (dd == null) || (dd.iteration < repeat);     
     }
                
     public static void main(String [] args) {

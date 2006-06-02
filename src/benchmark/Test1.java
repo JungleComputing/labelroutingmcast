@@ -68,7 +68,7 @@ public class Test1 extends TestBase implements ByteArrayReceiver {
         long start = System.currentTimeMillis();
         
         for (int i=0;i<count;i++) { 
-            lrmcast.send(ids, 0, data);        
+            lrmcast.send(ids, 0, 0, data);        
         }         
         
         if (ring) {
@@ -92,7 +92,7 @@ public class Test1 extends TestBase implements ByteArrayReceiver {
         System.out.println("Test took " + time + " ms. TP = " + tp + " MB/s.");
     }
         
-    public synchronized boolean gotMessage(String sender, int id, 
+    public synchronized boolean gotMessage(String sender, int id, int num, 
             byte[] message) {
         
         receivedMessages++;
