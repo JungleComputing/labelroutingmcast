@@ -31,8 +31,9 @@ public class TestBase implements ResizeHandler {
     protected static boolean autoSort = false;
     protected static boolean sortOnce = false;    
     protected static boolean ring = false;
-    protected static boolean verbose = false;
-        
+    protected static boolean verbose = false;        
+    protected static boolean signal = false;
+    
     protected Ibis ibis;
     protected IbisIdentifier masterID;         
     
@@ -227,8 +228,10 @@ public class TestBase implements ResizeHandler {
             } else if (args[i].equals("-verbose")) {
                 verbose = true;   
                 args[i] = null;
-            }           
-               
+            } else if (args[i].equals("-signal")) {
+                signal = true;   
+                args[i] = null;
+            }               
         }
             
         if (ring && autoSort) { 

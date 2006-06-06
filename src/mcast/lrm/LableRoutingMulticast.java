@@ -84,6 +84,7 @@ public class LableRoutingMulticast extends Thread {
         int dst;
         int id;
         int num;
+        int len;
         
         try {
             sender = rm.readString();
@@ -101,22 +102,23 @@ public class LableRoutingMulticast extends Thread {
             id = rm.readInt();
             num = rm.readInt();
             
-            int data = rm.readInt();        
-            message = getByteArray(data);            
+            len = rm.readInt();        
+            message = getByteArray(len);            
             
-            if (data > 0) { 
-                rm.readArray(message, 0, data);
+            if (len > 0) { 
+                rm.readArray(message, 0, len);
             } 
 
             rm.finish();
 
             if (dst > 0) { 
-                send(sender, destinations, dst, id, num, message, 0, message.length);
+                send(sender, destinations, dst, id, num, message, 0, len);
             }
             
-        } catch (Exception e) {
+        } catch (IOException e) {
             System.err.println("Failed to receive message: " + e);
             e.printStackTrace(System.err);
+            rm.finish(e);
             return;
         }
       /*  
@@ -133,19 +135,21 @@ public class LableRoutingMulticast extends Thread {
             senders.put(sender, senderID);
         }
         
-        if (senderID == null) { 
+        if (senderID == null) { receive
             System.err.println("Delivery failed! Cannot find sender for " + sender);
             return;
         }
         */
         try { 
-            boolean reuse = receiver.gotMessage(sender, id, num, message);
+            boolean reuse = receiver.gotMessage(sender, id, num, message, len);
             
             if (!reuse) { 
                 data = null;
             }
         } catch (Throwable e) {
             System.err.println("Delivery failed! " + e);
+            e.printStackTrace(System.err);
+            System.exit(1);
         }
     }
     
@@ -296,17 +300,24 @@ public class LableRoutingMulticast extends Thread {
             return; 
         }
         
-        String id = destinations[0];
-
-        SendPort sp = getSendPort(id);
+        // Get the next target from the destination array. If this fails, get 
+        // the next one, etc. If no working destination is found we give up.  
+        int index = 0;        
+        SendPort sp = null;
+        String id = null;
+        
+        do { 
+            id = destinations[index++];
+            sp = getSendPort(id);
+        } while (sp == null && index < destinations.length);
         
         if (sp == null) { 
-            // it's dead Jim!
+            // No working destinations where found, so give up!
             return;
         }
         
         try { 
-            sendMessage(sp, sender, destinations, 1, destinations.length, 
+            sendMessage(sp, sender, destinations, index, destinations.length, 
                     messageID, messageNum, message, off, len);
         } catch (IOException e) {
             System.err.println("Write to " + id + " failed!");            

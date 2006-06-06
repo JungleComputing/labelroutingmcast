@@ -93,7 +93,7 @@ public class Test1 extends TestBase implements ByteArrayReceiver {
     }
         
     public synchronized boolean gotMessage(String sender, int id, int num, 
-            byte[] message) {
+            byte[] message, int len) {
         
         receivedMessages++;
         

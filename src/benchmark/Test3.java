@@ -26,7 +26,7 @@ public class Test3 extends TestBase {
     private Test3() throws IbisException, IOException, ClassNotFoundException { 
         
         super();
-        omc = new ObjectMulticaster(ibis, autoSort);
+        omc = new ObjectMulticaster(ibis, autoSort, signal);
     }
     
     private void start() throws IOException, ClassNotFoundException { 

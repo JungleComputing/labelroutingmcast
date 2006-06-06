@@ -7,7 +7,6 @@ import ibis.io.DataInputStream;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
 
 /**
  * This is a complete implementation of <code>DataInputStream</code>.
@@ -34,10 +33,10 @@ public final class BufferedArrayInputStream extends DataInputStream {
     private static boolean DEBUG = false;
     
     /** The buffer size. */
-    private static final int BUF_SIZE = 16*1024;
+    private static final int BUF_SIZE = 8*1024;
 
     /** The underlying <code>InputStream</code>. */
-    private InputStream in;
+    private LRMCInputStream in;
 
     /** The buffer. */
     private byte[] buffer = new byte[BUF_SIZE]; 
@@ -50,12 +49,12 @@ public final class BufferedArrayInputStream extends DataInputStream {
     /** Object used to convert primitive types to bytes. */
     private Conversion conversion;
         
-    public BufferedArrayInputStream(InputStream in) {
+    public BufferedArrayInputStream(LRMCInputStream in) {
         this.in = in;
         conversion = Conversion.loadConversion(false);
     }
     
-    public void setInputStream(InputStream in) { 
+    public void setInputStream(LRMCInputStream in) { 
         this.in = in;
     }
 

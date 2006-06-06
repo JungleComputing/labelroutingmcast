@@ -30,7 +30,7 @@ public final class BufferedArrayOutputStream extends DataOutputStream {
     private static boolean DEBUG = false;
     
     /** Size of the buffer in which output data is collected. */
-    private static final int BUF_SIZE = 32*1024;
+    private static final int BUF_SIZE = 8*1024;
 
     /** The underlying <code>OutputStream</code>. */
     private LRMCOutputStream out;

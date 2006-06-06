@@ -25,7 +25,6 @@ public class LRMCOutputStream extends OutputStream implements LRMCStreamConstant
     public void setTarget(IbisIdentifier [] target) { 
         this.target = target; 
         firstPacket = true;
-        currentID++;        
     }
 
     public void close() { 
@@ -52,7 +51,7 @@ public class LRMCOutputStream extends OutputStream implements LRMCStreamConstant
        if (lastPacket) { 
            mcast.send(target, currentID++, currentNUM | LAST_PACKET, b, off, len);
        } else { 
-           mcast.send(target, currentID++, currentNUM, b, off, len);
+           mcast.send(target, currentID, currentNUM, b, off, len);
        }
     //   System.err.println("____ done write(" + off + ", " + len + ")");       
     }

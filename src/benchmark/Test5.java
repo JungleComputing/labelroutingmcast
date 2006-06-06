@@ -5,7 +5,7 @@ import ibis.ipl.IbisIdentifier;
 
 import java.io.IOException;
 
-import mcast.object2.ObjectMulticaster;
+import mcast.object.ObjectMulticaster;
 
 /**
  * 

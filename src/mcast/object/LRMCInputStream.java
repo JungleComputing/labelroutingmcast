@@ -6,6 +6,7 @@ import java.io.InputStream;
 public class LRMCInputStream extends InputStream implements LRMCStreamConstants {
     
     private String source;       
+    private ObjectReceiver receiver;
         
     private Buffer current = null; 
     private int index = 0;
@@ -16,27 +17,35 @@ public class LRMCInputStream extends InputStream implements LRMCStreamConstants 
     private Buffer head;
     private Buffer tail;
    
+    private int lowBound = 0;
+    private int highBound = 1024*1024;
+       
     private static BufferCache cache = new BufferCache(1000);
-    
+       
     public LRMCInputStream(String source) { 
-        this.source = source;
+        this(source, null);
     }
     
+    public LRMCInputStream(String source, ObjectReceiver receiver) { 
+        this.source = source;
+        this.receiver = receiver;
+    }
+        
     public String getSource() { 
         return source;
     }
     
-    public boolean haveData() {  
+    public synchronized boolean haveData() {  
         return (head != null) || 
-            (current != null && index < current.buffer.length) ;
+            (current != null && index < current.len) ;
     }
     
     private synchronized void addBuffer(int id, int num, boolean last, 
-            byte [] buffer) { 
+            byte [] buffer, int len) { 
         
         // TODO: cache these ?
         Buffer tmp = cache.get();
-        tmp.set(id, num, last, buffer);
+        tmp.set(id, num, last, buffer, len);
         
         if (head == null) { 
             head = tail = tmp;
@@ -45,9 +54,12 @@ public class LRMCInputStream extends InputStream implements LRMCStreamConstants 
             tail.next = tmp;
             tail = tail.next;
         }
+        
+        // Note use real length here!
+        memoryUsage += buffer.length;
     }
     
-    public void addBuffer(int id, int num, byte [] buffer) {
+    public void addBuffer(int id, int num, byte [] buffer, int len) {
         
         boolean lastPacket = false;
         
@@ -60,9 +72,11 @@ public class LRMCInputStream extends InputStream implements LRMCStreamConstants 
                 (firstPacket ? "F" : " ") + (lastPacket ? "L" : " ") + 
                 " byte[" + buffer.length + "]");
         */        
-        addBuffer(id, num, lastPacket, buffer);
-                
-        memoryUsage += buffer.length;
+        addBuffer(id, num, lastPacket, buffer, len);
+        
+        if (receiver != null && lastPacket) { 
+            receiver.haveObject(this);
+        }     
     }
         
     private synchronized void getBuffer() { 
@@ -101,7 +115,7 @@ public class LRMCInputStream extends InputStream implements LRMCStreamConstants 
                 // current packet and get a new one. We keep trying until we see
                 // a 'first packet'.                    
                 System.err.println("___ Dropping packet " + current.id + "/" + 
-                        current.num + " [" + current.buffer.length + "] " +
+                        current.num + " [" + current.len + "] " +
                                 "since it's not the first one!");                
                 freeBuffer();
                 getBuffer();
@@ -109,9 +123,22 @@ public class LRMCInputStream extends InputStream implements LRMCStreamConstants 
                 
             currentID = current.id;
     
-            System.err.println("____ Current memory usage " + 
-                    (memoryUsage/1024) + " KB, series " + currentID);
-            
+            if (memoryUsage > highBound) { 
+                System.err.println("++++ Current memory usage " + 
+                        (memoryUsage/1024) + " KB, series " + currentID);
+                
+                lowBound = highBound;
+                highBound += 1024*1024;
+
+            } else if (memoryUsage < lowBound) { 
+
+                System.err.println("---- Current memory usage " + 
+                        (memoryUsage/1024) + " KB, series " + currentID);
+                
+                highBound = lowBound;
+                lowBound -= 1024*1024;                
+            }
+                            
         } else if (currentID != current.id) {                      
             // Oh dear, we seem to have missed the end of a series of packets. 
             // This is likely to happen when one of our predecessors in the
@@ -135,13 +162,14 @@ public class LRMCInputStream extends InputStream implements LRMCStreamConstants 
         }        
     }
     
-    private void freeBuffer() { 
+    private synchronized void freeBuffer() { 
         // Free's the current buffer and updates the currentID if necessary
         
         if (current.last) { 
             currentID = 0;
         }
         
+        // Note use real length here!
         memoryUsage -= current.buffer.length;
 
         cache.put(current);        
@@ -150,13 +178,13 @@ public class LRMCInputStream extends InputStream implements LRMCStreamConstants 
     
     public int read(byte b[], int off, int len) throws IOException {
         
-        if (current == null || index == current.buffer.length) { 
+        if (current == null || index == current.len) { 
             getBuffer();
         } 
         
         checkBuffer();
                 
-        int leftover = current.buffer.length-index;
+        int leftover = current.len-index;
                 
         if (leftover <= len) { 
             System.arraycopy(current.buffer, index, b, off, leftover);            
