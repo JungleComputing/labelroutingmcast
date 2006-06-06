@@ -1,49 +1,54 @@
 package mcast.lrm;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
-
-import ibis.ipl.IbisIdentifier;
-import ibis.ipl.ReceivePortIdentifier;
 import ibis.ipl.Ibis;
 import ibis.ipl.IbisException;
+import ibis.ipl.IbisIdentifier;
 import ibis.ipl.PortType;
 import ibis.ipl.ReadMessage;
 import ibis.ipl.ReceivePort;
+import ibis.ipl.ReceivePortIdentifier;
 import ibis.ipl.SendPort;
 import ibis.ipl.StaticProperties;
 import ibis.ipl.WriteMessage;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+
 public class LableRoutingMulticast extends Thread {
 
     private final static int ZOMBIE_THRESHOLD = 10000;
-    
+
     private final Ibis ibis;
     private final PortType portType;
     private ReceivePort receive; 
     
-    private ByteArrayReceiver receiver;
+    private MessageReceiver receiver;
+    
+    //private ByteArrayCache cache = new ByteArrayCache();
+    
+    private final MessageCache cache; // = new BufferCache(1000);
+    
     private final HashMap sendports = new HashMap();    
     private final HashMap diedmachines = new HashMap();
-  //  private final HashMap senders = new HashMap();
     
     private boolean mustStop = false;    
     private boolean changeOrder = false;    
     
     private String[] destinations = null;
     
-    private byte[] data = null;
-    
-    public LableRoutingMulticast(Ibis ibis, ByteArrayReceiver m) 
+    //private byte[] data = null;
+           
+    public LableRoutingMulticast(Ibis ibis, MessageReceiver m, MessageCache c) 
         throws IOException, IbisException {
-        this(ibis, m, false);
+        this(ibis, m, c, false);
     }
             
-    public LableRoutingMulticast(Ibis ibis, ByteArrayReceiver m, 
+    public LableRoutingMulticast(Ibis ibis, MessageReceiver m, MessageCache c, 
             boolean changeOrder) throws IOException, IbisException {
         this.ibis = ibis;    
         this.receiver = m;
+        this.cache = c;
         this.changeOrder = changeOrder;
                 
         StaticProperties s = new StaticProperties();
@@ -63,33 +68,35 @@ public class LableRoutingMulticast extends Thread {
         if (destinations == null || destinations.length < len) {         
             destinations = new String[len];
         } 
-        
+               
         return destinations;
     }
-    
+
+    /*
     private final byte [] getByteArray(int len) {
         
         if (data == null || data.length < len) {         
-            data = new byte[len];
+            data = cache.get(len);
         }
         
         return data;
     }
     
+    public ByteArrayCache getCache() { 
+        return cache;
+    }
+    */
+                         
     private void receive(ReadMessage rm) { 
 
         String sender = null;        
-        String [] destinations = null;
-        byte [] message = null;
-        int dst;
-        int id;
-        int num;
-        int len;
+        String [] destinations = null;        
+        Message buffer = null;
         
         try {
             sender = rm.readString();
                         
-            dst = rm.readInt();
+            int dst = rm.readInt();
             
             if (dst > 0) { 
                 destinations = getDestinationArray(dst);
@@ -99,26 +106,33 @@ public class LableRoutingMulticast extends Thread {
                 }
             }
             
-            id = rm.readInt();
-            num = rm.readInt();
+            int id = rm.readInt();
+            int num = rm.readInt();            
+            int len = rm.readInt();        
             
-            len = rm.readInt();        
-            message = getByteArray(len);            
+            buffer = cache.get(len);            
             
             if (len > 0) { 
-                rm.readArray(message, 0, len);
+                rm.readArray(buffer.buffer, 0, len);
             } 
 
             rm.finish();
+            
+            buffer.set(id, num, false, len);
 
             if (dst > 0) { 
-                send(sender, destinations, dst, id, num, message, 0, len);
+                send(sender, destinations, dst, id, num, buffer.buffer, 0, len);
             }
             
         } catch (IOException e) {
             System.err.println("Failed to receive message: " + e);
             e.printStackTrace(System.err);
             rm.finish(e);
+            
+            if (buffer != null) { 
+                cache.put(buffer);
+            }
+            
             return;
         }
       /*  
@@ -141,15 +155,14 @@ public class LableRoutingMulticast extends Thread {
         }
         */
         try { 
-            boolean reuse = receiver.gotMessage(sender, id, num, message, len);
+            boolean reuse = receiver.gotMessage(sender, buffer);
             
-            if (!reuse) { 
-                data = null;
-            }
+            //if (!reuse) { 
+//                data = null;
+            //}
         } catch (Throwable e) {
             System.err.println("Delivery failed! " + e);
             e.printStackTrace(System.err);
-            System.exit(1);
         }
     }
     

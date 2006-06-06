@@ -5,7 +5,9 @@ import ibis.ipl.IbisIdentifier;
 
 import java.io.IOException;
 
-import mcast.lrm.ByteArrayReceiver;
+import mcast.lrm.Message;
+import mcast.lrm.MessageCache;
+import mcast.lrm.MessageReceiver;
 import mcast.lrm.LableRoutingMulticast;
 
 /**
@@ -21,15 +23,17 @@ import mcast.lrm.LableRoutingMulticast;
  * @version 1.0 May 9, 2006
  * @since 1.0
  */
-public class Test1 extends TestBase implements ByteArrayReceiver {
+public class Test1 extends TestBase implements MessageReceiver {
        
     private int receivedMessages = 0;
     
     private LableRoutingMulticast lrmcast;
         
+    private MessageCache cache = new MessageCache(1);
+    
     private Test1() throws IbisException, IOException, ClassNotFoundException {      
         super();        
-        lrmcast = new LableRoutingMulticast(ibis, this, autoSort);        
+        lrmcast = new LableRoutingMulticast(ibis, this, cache, autoSort);        
     }
     
     private void start() throws IOException { 
@@ -92,8 +96,8 @@ public class Test1 extends TestBase implements ByteArrayReceiver {
         System.out.println("Test took " + time + " ms. TP = " + tp + " MB/s.");
     }
         
-    public synchronized boolean gotMessage(String sender, int id, int num, 
-            byte[] message, int len) {
+    public synchronized boolean gotMessage(String sender, Message b
+            /* int id, int num, byte[] message, int len*/) {
         
         receivedMessages++;
         

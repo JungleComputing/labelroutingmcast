@@ -3,31 +3,42 @@ package mcast.object;
 import java.io.IOException;
 import java.io.InputStream;
 
+import mcast.lrm.Message;
+import mcast.lrm.MessageCache;
+
+//import mcast.lrm.ByteArrayCache;
+
 public class LRMCInputStream extends InputStream implements LRMCStreamConstants {
     
     private String source;       
     private ObjectReceiver receiver;
         
-    private Buffer current = null; 
+    private Message current = null; 
+    
     private int index = 0;
+    
     private int currentID = 0;    
+    private int currentNum = 0;    
     
     private long memoryUsage = 0; 
     
-    private Buffer head;
-    private Buffer tail;
+    private Message head;
+    private Message tail;
    
     private int lowBound = 0;
     private int highBound = 1024*1024;
        
-    private static BufferCache cache = new BufferCache(1000);
-       
-    public LRMCInputStream(String source) { 
-        this(source, null);
+    private MessageCache cache; 
+           
+    public LRMCInputStream(String source, MessageCache cache) { 
+        this(source, cache, null);
     }
     
-    public LRMCInputStream(String source, ObjectReceiver receiver) { 
+    public LRMCInputStream(String source, MessageCache cache, 
+            ObjectReceiver receiver) {  
+        
         this.source = source;
+        this.cache = cache;
         this.receiver = receiver;
     }
         
@@ -40,46 +51,39 @@ public class LRMCInputStream extends InputStream implements LRMCStreamConstants 
             (current != null && index < current.len) ;
     }
     
-    private synchronized void addBuffer(int id, int num, boolean last, 
-            byte [] buffer, int len) { 
-        
-        // TODO: cache these ?
-        Buffer tmp = cache.get();
-        tmp.set(id, num, last, buffer, len);
+    private synchronized void queueMessage(Message m) { 
         
         if (head == null) { 
-            head = tail = tmp;
+            head = tail = m;
             notifyAll();
         } else {             
-            tail.next = tmp;
+            tail.next = m;
             tail = tail.next;
         }
         
         // Note use real length here!
-        memoryUsage += buffer.length;
+        memoryUsage += m.buffer.length;
     }
     
-    public void addBuffer(int id, int num, byte [] buffer, int len) {
+    public void addMessage(Message m) {
         
-        boolean lastPacket = false;
-        
-        if ((num & LAST_PACKET) != 0) { 
-            lastPacket = true;
-            num = num & ~LAST_PACKET;
+        if ((m.num & LAST_PACKET) != 0) { 
+            m.last = true;
+            m.num &= ~LAST_PACKET;
         } 
         
       /*  System.err.println("___ Got packet (" + source + ") " + id + 
                 (firstPacket ? "F" : " ") + (lastPacket ? "L" : " ") + 
                 " byte[" + buffer.length + "]");
         */        
-        addBuffer(id, num, lastPacket, buffer, len);
+        queueMessage(m); 
         
-        if (receiver != null && lastPacket) { 
+        if (receiver != null && m.last) { 
             receiver.haveObject(this);
         }     
     }
         
-    private synchronized void getBuffer() { 
+    private synchronized void getMessage() { 
         
         while (head == null) {
             try { 
@@ -99,11 +103,11 @@ public class LRMCInputStream extends InputStream implements LRMCStreamConstants 
         index = 0;
     }
 
-    private void checkBuffer() throws IOException { 
-        // Checks if the ID number of the packet corresponds to what we expect.
+    private void checkMessage() throws IOException { 
+        // Check if the ID/number of the packet corresponds to what we expect.
         
         if (currentID == 0) {
-            // We must start a new series of buffers here. Each series 
+            // We must start a new series of packets here. Each series 
             // corresponds to a 'multi fragment' message.
                
             while (current.num != 0) {
@@ -117,11 +121,12 @@ public class LRMCInputStream extends InputStream implements LRMCStreamConstants 
                 System.err.println("___ Dropping packet " + current.id + "/" + 
                         current.num + " [" + current.len + "] " +
                                 "since it's not the first one!");                
-                freeBuffer();
-                getBuffer();
+                freeMessage();
+                getMessage();
             } 
                 
-            currentID = current.id;
+            currentID  = current.id;
+            currentNum = 0;
     
             if (memoryUsage > highBound) { 
                 System.err.println("++++ Current memory usage " + 
@@ -139,34 +144,39 @@ public class LRMCInputStream extends InputStream implements LRMCStreamConstants 
                 lowBound -= 1024*1024;                
             }
                             
-        } else if (currentID != current.id) {                      
-            // Oh dear, we seem to have missed the end of a series of packets. 
+        } else if (currentID != current.id || currentNum != current.num) {                      
+            
+            // Oh dear, we seem to have missed a part of a series of packets. 
             // This is likely to happen when one of our predecessors in the
             // multicast chain has crashed. As a result, it does not forward the 
-            // last part of a series of packets (which together form one 
-            // multicast message). When the next multicast start, the problem 
-            // may be fixed (i.e., by changing the chain). This way, we see a 
-            // sudden change in the ID number, without having seen a 'last 
-            // packet' for the previous series. 
+            // one or more packets to me. When it's predecesor notices this, it 
+            // may change the chain and start sending to me directly. This way, 
+            // we see a sudden change in the ID number, without having seen a 
+            // 'last packet' for the previous series, or we see the currentNum 
+            // skip a few values.
             
-            // We solve this by setting the currentID to 0, and throwing an 
-            // exception to notify the user that we cannot finish the current 
-            // multicast. We will process the current message when the user has
-            // handled the exception and tries to receive again
+            // We solve this setting the currentID to 0 (to indicate that we 
+            // want to start a new series) and throwing an exception to notify 
+            // the user that we cannot finish the current multicast. We will 
+            // process the current message when the user has handled the 
+            // exception and tries to receive again. 
             String tmp = "Inconsistency discovered in multicast packet series," 
-                    + " current series " + currentID + " next packet " 
-                    + current.id + "/" + current.num;
+                    + " current series " + currentID + "/" + currentNum + 
+                    " next packet " + current.id + "/" + current.num;
             
-            currentID = 0;                        
-            throw new IOException(tmp);
-        }        
+            currentID  = 0;                        
+            throw new IOException(tmp);            
+        } 
     }
     
-    private synchronized void freeBuffer() { 
-        // Free's the current buffer and updates the currentID if necessary
+    private synchronized void freeMessage() { 
+        // Free the current message and updates the currentID if necessary
         
         if (current.last) { 
-            currentID = 0;
+            currentID  = 0;
+            currentNum = 0;
+        } else { 
+            currentNum++;
         }
         
         // Note use real length here!
@@ -179,16 +189,16 @@ public class LRMCInputStream extends InputStream implements LRMCStreamConstants 
     public int read(byte b[], int off, int len) throws IOException {
         
         if (current == null || index == current.len) { 
-            getBuffer();
+            getMessage();
         } 
         
-        checkBuffer();
+        checkMessage();
                 
         int leftover = current.len-index;
                 
         if (leftover <= len) { 
             System.arraycopy(current.buffer, index, b, off, leftover);            
-            freeBuffer();
+            freeMessage();
             return leftover;
         } else {          
             System.arraycopy(current.buffer, index, b, off, len);

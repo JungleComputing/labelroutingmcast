@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
 
-import mcast.lrm.ByteArrayReceiver;
+import mcast.lrm.Message;
+import mcast.lrm.MessageCache;
+import mcast.lrm.MessageReceiver;
 import mcast.lrm.LableRoutingMulticast;
 
 import ibis.ipl.Ibis;
@@ -14,7 +16,7 @@ import ibis.io.SerializationOutput;
 import ibis.ipl.IbisException;
 import ibis.ipl.IbisIdentifier;
 
-public class ObjectMulticaster implements ByteArrayReceiver, ObjectReceiver {
+public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
    
     private LableRoutingMulticast lrmc; 
     
@@ -34,6 +36,8 @@ public class ObjectMulticaster implements ByteArrayReceiver, ObjectReceiver {
     
     private long totalData = 0;
     
+    private MessageCache cache; 
+    
     public ObjectMulticaster(Ibis ibis) throws IOException, IbisException { 
         this(ibis, false, false);
     }
@@ -43,7 +47,9 @@ public class ObjectMulticaster implements ByteArrayReceiver, ObjectReceiver {
                 
         this.signal = signal;
         
-        lrmc = new LableRoutingMulticast(ibis, this, changeOrder);
+        cache = new MessageCache(1000);
+                
+        lrmc = new LableRoutingMulticast(ibis, this, cache, changeOrder);
         
         os = new LRMCOutputStream(lrmc);
 
@@ -54,17 +60,16 @@ public class ObjectMulticaster implements ByteArrayReceiver, ObjectReceiver {
         sin = SerializationBase.createSerializationInput("ibis", bin);
     }
     
-    public synchronized boolean gotMessage(String sender, int id, int num, 
-            byte[] message, int len) {
+    public synchronized boolean gotMessage(String sender, Message m) {
         
         LRMCInputStream tmp = (LRMCInputStream) inputStreams.get(sender);
         
         if (tmp == null) {
             
             if (signal) { 
-                tmp = new LRMCInputStream(sender, this);
+                tmp = new LRMCInputStream(sender, cache, this);
             } else { 
-                tmp = new LRMCInputStream(sender);
+                tmp = new LRMCInputStream(sender, cache);
             }
             
             inputStreams.put(sender, tmp);
@@ -75,9 +80,7 @@ public class ObjectMulticaster implements ByteArrayReceiver, ObjectReceiver {
             notifyAll();
         } 
         
-        tmp.addBuffer(id, num, message, len);        
-        
-      // System.err.println("____ got message from " + sender);
+        tmp.addMessage(m);         
         
         return false;
     }
