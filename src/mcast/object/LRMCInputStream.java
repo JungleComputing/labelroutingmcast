@@ -8,7 +8,7 @@ import mcast.lrm.MessageCache;
 
 //import mcast.lrm.ByteArrayCache;
 
-public class LRMCInputStream extends InputStream implements LRMCStreamConstants {
+public class LRMCInputStream extends InputStream {
     
     private String source;       
     private ObjectReceiver receiver;
@@ -51,38 +51,26 @@ public class LRMCInputStream extends InputStream implements LRMCStreamConstants 
             (current != null && index < current.len) ;
     }
     
-    private synchronized void queueMessage(Message m) { 
+    public void addMessage(Message m) { 
         
-        if (head == null) { 
-            head = tail = m;
-            notifyAll();
-        } else {             
-            tail.next = m;
-            tail = tail.next;
-        }
+        synchronized (this) { 
+            if (head == null) { 
+                head = tail = m;
+                notifyAll();
+            } else {             
+                tail.next = m;
+                tail = tail.next;
+            }
         
-        // Note use real length here!
-        memoryUsage += m.buffer.length;
-    }
-    
-    public void addMessage(Message m) {
-        
-        if ((m.num & LAST_PACKET) != 0) { 
-            m.last = true;
-            m.num &= ~LAST_PACKET;
+            // Note use real length here!
+            memoryUsage += m.buffer.length;
         } 
-        
-      /*  System.err.println("___ Got packet (" + source + ") " + id + 
-                (firstPacket ? "F" : " ") + (lastPacket ? "L" : " ") + 
-                " byte[" + buffer.length + "]");
-        */        
-        queueMessage(m); 
         
         if (receiver != null && m.last) { 
             receiver.haveObject(this);
-        }     
+        }           
     }
-        
+           
     private synchronized void getMessage() { 
         
         while (head == null) {

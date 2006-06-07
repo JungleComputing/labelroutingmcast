@@ -118,7 +118,7 @@ public class LableRoutingMulticast extends Thread {
 
             rm.finish();
             
-            buffer.set(id, num, false, len);
+            buffer.set(id, num, len);
 
             if (dst > 0) { 
                 send(sender, destinations, dst, id, num, buffer.buffer, 0, len);

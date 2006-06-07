@@ -6,8 +6,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 import mcast.lrm.LableRoutingMulticast;
+import mcast.lrm.Message;
 
-public class LRMCOutputStream extends OutputStream implements LRMCStreamConstants {
+public class LRMCOutputStream extends OutputStream {
 
     private LableRoutingMulticast mcast;
     private IbisIdentifier [] target; 
@@ -49,7 +50,8 @@ public class LRMCOutputStream extends OutputStream implements LRMCStreamConstant
        }
        
        if (lastPacket) { 
-           mcast.send(target, currentID++, currentNUM | LAST_PACKET, b, off, len);
+           mcast.send(target, currentID++, currentNUM | Message.LAST_PACKET, 
+                   b, off, len);
        } else { 
            mcast.send(target, currentID, currentNUM, b, off, len);
        }
