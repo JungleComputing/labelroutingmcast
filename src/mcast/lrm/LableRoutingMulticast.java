@@ -34,14 +34,15 @@ public class LableRoutingMulticast extends Thread {
     private boolean changeOrder = false;    
     
     private String [] destinations = null;
-    
-    /* private Sender sender; 
+    /*
+    private MessageQueue sendQueue = new MessageQueue(10);
+    private Sender sender; 
     
     private class Sender extends Thread { 
         
         public void run() { 
             while (true) { 
-                Message m = dequeueSend();
+                Message m = sendQueue.dequeue();
                 
                 try { 
                     internalSend(m);
@@ -50,11 +51,11 @@ public class LableRoutingMulticast extends Thread {
                     e.printStackTrace(System.err);
                 }
                 
-                cache.put(m);
+                //cache.put(m);
             }
         }        
     }
-       */ 
+    */
     public LableRoutingMulticast(Ibis ibis, MessageReceiver m, MessageCache c) 
         throws IOException, IbisException {
         this(ibis, m, c, false);
@@ -76,10 +77,9 @@ public class LableRoutingMulticast extends Thread {
         receive = portType.createReceivePort("Ring-" + ibis.identifier().name());
         receive.enableConnections();
         
-       /* sender = new Sender();
-        sender.start();
-        */
-        
+        //sender = new Sender();
+        //sender.start();
+              
         this.start();
     }
     
@@ -98,39 +98,20 @@ public class LableRoutingMulticast extends Thread {
              
     private void receive(ReadMessage rm) { 
 
-        String sender = null;        
-        String [] destinations = null;        
         Message message = null;
         
         try {
-            sender = rm.readString();
-                        
+            int len = rm.readInt();
             int dst = rm.readInt();
             
-            if (dst > 0) { 
-                destinations = getDestinationArray(dst);
-                
-                for (int i=0;i<dst;i++) { 
-                    destinations[i] = rm.readString();
-                }
-            }
+            message = cache.get(len, dst);                        
+            message.read(rm, len, dst);
             
-            int id = rm.readInt();
-            int num = rm.readInt();            
-            int len = rm.readInt();        
-            
-            message = cache.get(len);            
-            
-            if (len > 0) { 
-                rm.readArray(message.buffer, 0, len);
-            } 
-
             rm.finish();
-            
-            message.set(sender, destinations, id, num, 0, len);
-        
+                       
             if (dst > 0) { 
-                internalSend(message);        
+               internalSend(message);
+               //sendQueue.enqueue(message);
             }
             
         } catch (IOException e) {
@@ -230,39 +211,7 @@ public class LableRoutingMulticast extends Thread {
    
         return sp;
     }
-    
-    private void sendMessage(SendPort sp, int fromDest, Message m) throws IOException { 
-        
-       // System.err.println("____ sendMessage(" + messageID + ", byte[" + len + "])");
-        
-        WriteMessage wm = sp.newMessage();
-        
-        wm.writeString(m.sender);
-        
-        //wm.writeInt(destinations.length-1);
-        wm.writeInt(m.destinations.length-fromDest);
-        
-        for (int i=fromDest;i<m.destinations.length;i++) { 
-            wm.writeString(m.destinations[i]);
-        } 
-        
-        wm.writeInt(m.id);
-        
-        if (m.last) { 
-            wm.writeInt(m.num | Message.LAST_PACKET);
-        } else { 
-            wm.writeInt(m.num);            
-        }
-        
-        wm.writeInt(m.len);                
-        
-        if (m.len > 0) { 
-            wm.writeArray(m.buffer, m.off, m.len);
-        }              
-        
-        wm.finish();
-    }
-        
+            
     private void internalSend(Message m) {
       
         if (m.destinations == null || m.destinations.length == 0) { 
@@ -285,8 +234,11 @@ public class LableRoutingMulticast extends Thread {
             return;
         }
         
+        // send the message to the target 
         try { 
-            sendMessage(sp, index, m);
+            WriteMessage wm = sp.newMessage();
+            m.write(wm, index);        
+            wm.finish();
         } catch (IOException e) {
             System.err.println("Write to " + id + " failed!");            
             sendports.remove(id);            

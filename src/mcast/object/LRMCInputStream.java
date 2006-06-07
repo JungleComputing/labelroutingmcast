@@ -185,6 +185,9 @@ public class LRMCInputStream extends InputStream {
         int leftover = current.len-index;
                 
         if (leftover <= len) { 
+            System.out.println("Copying " + index + " " + current.buffer.length  
+                    + " " + off + " " + leftover);
+            
             System.arraycopy(current.buffer, index, b, off, leftover);            
             freeMessage();
             return leftover;

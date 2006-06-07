@@ -18,29 +18,30 @@ public class MessageCache {
     
     public synchronized void put(Message m) { 
         
+        return;
+        
        // if (m.down() > 0) {
             // message is still used somewhere!
        //     return;
        // }
-         
+         /*
         if (size < MAX_SIZE && m.buffer.length == MAX_MESSAGE_SIZE) {
             m.next = cache;
             cache = m;
             size++;
         } else {      
-            System.err.println("EEK: got buffer of " + m.buffer.length);
-            
             m.next = null;
         }
+        */
     }
     
-    public synchronized Message get(int len) { 
+    public synchronized Message get(int len, int dst) { 
         
         if (size == 0 || len > MAX_MESSAGE_SIZE) { 
             if (len <= MAX_MESSAGE_SIZE) {
-                return new Message(MAX_MESSAGE_SIZE);
-            } else { 
-                return new Message(len);
+                return new Message(MAX_MESSAGE_SIZE, dst);
+            } else {
+                return new Message(len, dst);
             }
         } 
         
@@ -48,7 +49,7 @@ public class MessageCache {
         cache = cache.next;
         tmp.next = null;
         size--;
-        
+                
         return tmp;        
     }    
 }
