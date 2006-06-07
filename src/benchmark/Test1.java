@@ -71,8 +71,10 @@ public class Test1 extends TestBase implements MessageReceiver {
         
         long start = System.currentTimeMillis();
         
+        lrmcast.setDestination(ids);
+        
         for (int i=0;i<count;i++) { 
-            lrmcast.send(ids, 0, 0, data);        
+            lrmcast.send(0, 0, data, 0, data.length);        
         }         
         
         if (ring) {
@@ -96,9 +98,8 @@ public class Test1 extends TestBase implements MessageReceiver {
         System.out.println("Test took " + time + " ms. TP = " + tp + " MB/s.");
     }
         
-    public synchronized boolean gotMessage(String sender, Message b
-            /* int id, int num, byte[] message, int len*/) {
-        
+    public synchronized boolean gotMessage(Message b) { 
+
         receivedMessages++;
         
         if (ring && receivedMessages == count) { 

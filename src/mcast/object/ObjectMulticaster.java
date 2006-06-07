@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
 
+import mcast.lrm.IbisSorter;
 import mcast.lrm.Message;
 import mcast.lrm.MessageCache;
 import mcast.lrm.MessageReceiver;
@@ -37,7 +38,7 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     private long totalData = 0;
     
     private MessageCache cache; 
-    
+               
     public ObjectMulticaster(Ibis ibis) throws IOException, IbisException { 
         this(ibis, false, false);
     }
@@ -59,24 +60,28 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
         sout = SerializationBase.createSerializationOutput("ibis", bout);
         sin = SerializationBase.createSerializationInput("ibis", bin);
     }
+
+    public void setDestination(IbisIdentifier [] dest) { 
+        lrmc.setDestination(dest);
+    }
     
-    public synchronized boolean gotMessage(String sender, Message m) {
+    public synchronized boolean gotMessage(Message m) {
         
-        LRMCInputStream tmp = (LRMCInputStream) inputStreams.get(sender);
+        LRMCInputStream tmp = (LRMCInputStream) inputStreams.get(m.sender);
         
         if (tmp == null) {
             
             if (signal) { 
-                tmp = new LRMCInputStream(sender, cache, this);
+                tmp = new LRMCInputStream(m.sender, cache, this);
             } else { 
-                tmp = new LRMCInputStream(sender, cache);
+                tmp = new LRMCInputStream(m.sender, cache);
             }
             
-            inputStreams.put(sender, tmp);
+            inputStreams.put(m.sender, tmp);
         } 
           
         if (!tmp.haveData()) {         
-            available.addLast(sender);
+            available.addLast(m.sender);
             notifyAll();
         } 
         
@@ -90,9 +95,9 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
         // We only want to return the number of bytes written in this bcast, so 
         // reset the count.
         bout.resetBytesWritten();
-        
-        // set the target ibises
-        os.setTarget(id);
+                
+        lrmc.setDestination(id);
+        os.reset();
         
         // write the object and reset the stream
         sout.reset(true);              

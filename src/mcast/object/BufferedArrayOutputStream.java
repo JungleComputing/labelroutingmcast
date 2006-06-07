@@ -82,14 +82,12 @@ public final class BufferedArrayOutputStream extends DataOutputStream {
         if (forced || index + incr > BUF_SIZE) {
             bytes += index;
 
-            // System.err.print("fflushing [");
-            // for (int i=0;i<index;i++) { 
-            //     System.err.print(buffer[i] + ",");
-            // }
-            // System.err.println("] " + bytes);
-
             out.write(buffer, 0, index, forced);
+            
+            // Assume we lost the buffer here 
             index = 0;
+            buffer = new byte[BUF_SIZE];      
+            // TODO: optimize!
         }
     }
 

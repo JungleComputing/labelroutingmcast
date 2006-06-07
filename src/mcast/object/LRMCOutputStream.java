@@ -1,7 +1,5 @@
 package mcast.object;
 
-import ibis.ipl.IbisIdentifier;
-
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -11,7 +9,6 @@ import mcast.lrm.Message;
 public class LRMCOutputStream extends OutputStream {
 
     private LableRoutingMulticast mcast;
-    private IbisIdentifier [] target; 
     
     private int currentID = 0;  
     private int currentNUM = 0;  
@@ -23,8 +20,7 @@ public class LRMCOutputStream extends OutputStream {
         this.mcast = mcast;        
     }
 
-    public void setTarget(IbisIdentifier [] target) { 
-        this.target = target; 
+    public void reset() { 
         firstPacket = true;
     }
 
@@ -50,10 +46,9 @@ public class LRMCOutputStream extends OutputStream {
        }
        
        if (lastPacket) { 
-           mcast.send(target, currentID++, currentNUM | Message.LAST_PACKET, 
-                   b, off, len);
+           mcast.send(currentID++, currentNUM|Message.LAST_PACKET, b, off, len);
        } else { 
-           mcast.send(target, currentID, currentNUM, b, off, len);
+           mcast.send(currentID, currentNUM, b, off, len);
        }
     //   System.err.println("____ done write(" + off + ", " + len + ")");       
     }

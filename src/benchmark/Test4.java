@@ -98,9 +98,8 @@ public class Test4 extends TestBase {
                 size += dd.getSize();
             } catch (Exception e) { 
                 System.err.println("Receive failed: " + e);
-                if (verbose) { 
-                    e.printStackTrace(System.err);
-                } 
+                e.printStackTrace(System.err);
+                System.exit(1); 
             }
         }
         

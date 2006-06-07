@@ -25,9 +25,7 @@ public class LableRoutingMulticast extends Thread {
     
     private MessageReceiver receiver;
     
-    //private ByteArrayCache cache = new ByteArrayCache();
-    
-    private final MessageCache cache; // = new BufferCache(1000);
+    private final MessageCache cache;
     
     private final HashMap sendports = new HashMap();    
     private final HashMap diedmachines = new HashMap();
@@ -35,10 +33,28 @@ public class LableRoutingMulticast extends Thread {
     private boolean mustStop = false;    
     private boolean changeOrder = false;    
     
-    private String[] destinations = null;
+    private String [] destinations = null;
     
-    //private byte[] data = null;
-           
+    /* private Sender sender; 
+    
+    private class Sender extends Thread { 
+        
+        public void run() { 
+            while (true) { 
+                Message m = dequeueSend();
+                
+                try { 
+                    internalSend(m);
+                } catch (Exception e) {
+                    System.err.println("Sender thread got exception! " + e);
+                    e.printStackTrace(System.err);
+                }
+                
+                cache.put(m);
+            }
+        }        
+    }
+       */ 
     public LableRoutingMulticast(Ibis ibis, MessageReceiver m, MessageCache c) 
         throws IOException, IbisException {
         this(ibis, m, c, false);
@@ -60,38 +76,31 @@ public class LableRoutingMulticast extends Thread {
         receive = portType.createReceivePort("Ring-" + ibis.identifier().name());
         receive.enableConnections();
         
+       /* sender = new Sender();
+        sender.start();
+        */
+        
         this.start();
     }
     
     private final String [] getDestinationArray(int len) {
         
+        return new String[len];
+        
+        /*
         if (destinations == null || destinations.length < len) {         
             destinations = new String[len];
         } 
                
         return destinations;
+        */
     }
-
-    /*
-    private final byte [] getByteArray(int len) {
-        
-        if (data == null || data.length < len) {         
-            data = cache.get(len);
-        }
-        
-        return data;
-    }
-    
-    public ByteArrayCache getCache() { 
-        return cache;
-    }
-    */
-                         
+             
     private void receive(ReadMessage rm) { 
 
         String sender = null;        
         String [] destinations = null;        
-        Message buffer = null;
+        Message message = null;
         
         try {
             sender = rm.readString();
@@ -110,18 +119,18 @@ public class LableRoutingMulticast extends Thread {
             int num = rm.readInt();            
             int len = rm.readInt();        
             
-            buffer = cache.get(len);            
+            message = cache.get(len);            
             
             if (len > 0) { 
-                rm.readArray(buffer.buffer, 0, len);
+                rm.readArray(message.buffer, 0, len);
             } 
 
             rm.finish();
             
-            buffer.set(id, num, len);
-
+            message.set(sender, destinations, id, num, 0, len);
+        
             if (dst > 0) { 
-                send(sender, destinations, dst, id, num, buffer.buffer, 0, len);
+                internalSend(message);        
             }
             
         } catch (IOException e) {
@@ -129,76 +138,22 @@ public class LableRoutingMulticast extends Thread {
             e.printStackTrace(System.err);
             rm.finish(e);
             
-            if (buffer != null) { 
-                cache.put(buffer);
+            if (message != null) { 
+                cache.put(message);
             }
             
             return;
         }
-      /*  
-        IbisIdentifier senderID = (IbisIdentifier) senders.get(sender);
-        
-        if (senderID == null) {
-            try {
-                senderID = ibis.registry().lookupIbis(sender, 1000);
-            } catch (Exception e) {
-                System.err.println("Delivery failed! Cannot find sender " + e);
-                return;
-            }
-                        
-            senders.put(sender, senderID);
-        }
-        
-        if (senderID == null) { receive
-            System.err.println("Delivery failed! Cannot find sender for " + sender);
-            return;
-        }
-        */
+                    
         try { 
-            boolean reuse = receiver.gotMessage(sender, buffer);
-            
-            //if (!reuse) { 
-//                data = null;
-            //}
+          //  message.up();
+            receiver.gotMessage(message);            
         } catch (Throwable e) {
             System.err.println("Delivery failed! " + e);
             e.printStackTrace(System.err);
         }
     }
-    
-    public void send(IbisIdentifier [] destinations, int id, int num, byte [] message) {
-        send(destinations, id, num, message, 0, message.length);
-    } 
-    
-    
-    public void send(IbisIdentifier [] destinations, int id, int num, 
-            byte [] message, int off, int len) {
-        
-        if (changeOrder) { 
-            // We are allowed to change the order of machines in the destination
-            // array. This can be used to make the mcast 'cluster aware'.            
-            IbisSorter.sort(ibis.identifier(), destinations);
-            /*
-            System.err.println("Sender " + ibis.identifier() + " " 
-                    + ibis.identifier().cluster() + " sorted ids: ");
-            
-            for (int i=0;i<destinations.length;i++) { 
-                System.err.println("  " + destinations[i] + " (" 
-                        + destinations[i].cluster() + ")");                
-            } 
-            */           
-        }
-        
-        String [] tmp = new String[destinations.length];
-        
-        for (int i=0;i<destinations.length;i++) { 
-            tmp[i] = destinations[i].name();
-        }
-
-        send(ibis.identifier().name(), tmp, tmp.length, id, num, message, off,
-                len);        
-    } 
-    
+              
     private SendPort getSendPort(String id) { 
         SendPort sp = (SendPort) sendports.get(id);
         
@@ -276,40 +231,41 @@ public class LableRoutingMulticast extends Thread {
         return sp;
     }
     
-    private void sendMessage(SendPort sp, String sender, String [] destinations, 
-            int fromDest, int toDest, int messageID, int messageNum, 
-            byte [] message, int off, int len) throws IOException { 
+    private void sendMessage(SendPort sp, int fromDest, Message m) throws IOException { 
         
        // System.err.println("____ sendMessage(" + messageID + ", byte[" + len + "])");
         
         WriteMessage wm = sp.newMessage();
         
-        wm.writeString(sender);
+        wm.writeString(m.sender);
         
         //wm.writeInt(destinations.length-1);
-        wm.writeInt(toDest-fromDest);
+        wm.writeInt(m.destinations.length-fromDest);
         
-        for (int i=fromDest;i<toDest;i++) { 
-            wm.writeString(destinations[i]);
+        for (int i=fromDest;i<m.destinations.length;i++) { 
+            wm.writeString(m.destinations[i]);
         } 
         
-        wm.writeInt(messageID);
-        wm.writeInt(messageNum);
+        wm.writeInt(m.id);
         
-        wm.writeInt(len);                
+        if (m.last) { 
+            wm.writeInt(m.num | Message.LAST_PACKET);
+        } else { 
+            wm.writeInt(m.num);            
+        }
         
-        if (len > 0) { 
-            wm.writeArray(message, off, len);
+        wm.writeInt(m.len);                
+        
+        if (m.len > 0) { 
+            wm.writeArray(m.buffer, m.off, m.len);
         }              
         
         wm.finish();
     }
-    
-    private void send(String sender, String [] destinations,
-            int numdest, int messageID, int messageNum, byte [] message, 
-            int off, int len) {
+        
+    private void internalSend(Message m) {
       
-        if (destinations == null || destinations.length == 0) { 
+        if (m.destinations == null || m.destinations.length == 0) { 
             return; 
         }
         
@@ -320,9 +276,9 @@ public class LableRoutingMulticast extends Thread {
         String id = null;
         
         do { 
-            id = destinations[index++];
+            id = m.destinations[index++];
             sp = getSendPort(id);
-        } while (sp == null && index < destinations.length);
+        } while (sp == null && index < m.destinations.length);
         
         if (sp == null) { 
             // No working destinations where found, so give up!
@@ -330,13 +286,48 @@ public class LableRoutingMulticast extends Thread {
         }
         
         try { 
-            sendMessage(sp, sender, destinations, index, destinations.length, 
-                    messageID, messageNum, message, off, len);
+            sendMessage(sp, index, m);
         } catch (IOException e) {
             System.err.println("Write to " + id + " failed!");            
             sendports.remove(id);            
         }
-    }    
+    } 
+
+    public void setDestination(IbisIdentifier [] destinations) { 
+
+        if (changeOrder) { 
+            // We are allowed to change the order of machines in the destination
+            // array. This can be used to make the mcast 'cluster aware'.            
+            IbisSorter.sort(ibis.identifier(), destinations);                     
+        }
+        
+        this.destinations = new String[destinations.length];
+        
+        for (int i=0;i<destinations.length;i++) { 
+            this.destinations[i] = destinations[i].name();
+        }
+    }
+    
+    public void send(int id, int num, byte [] message, int off, int len) {
+                
+        Message m = new Message(ibis.identifier().name(), destinations, id, num,
+                message, off, len);
+        
+        internalSend(m);
+    } 
+
+    public void send(Message m) {
+        
+        if (m.destinations == null) { 
+            m.destinations = destinations;
+        }
+        
+        if (m.sender == null) { 
+            m.sender = ibis.identifier().name();
+        }
+        
+        internalSend(m);
+    } 
     
     public void run() { 
 

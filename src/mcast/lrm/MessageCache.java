@@ -16,16 +16,21 @@ public class MessageCache {
         this.MAX_SIZE = max;
     }
     
-    public synchronized void put(Message b) { 
+    public synchronized void put(Message m) { 
         
-        if (size < MAX_SIZE && b.buffer.length == MAX_MESSAGE_SIZE) {
-            b.next = cache;
-            cache = b;
+       // if (m.down() > 0) {
+            // message is still used somewhere!
+       //     return;
+       // }
+         
+        if (size < MAX_SIZE && m.buffer.length == MAX_MESSAGE_SIZE) {
+            m.next = cache;
+            cache = m;
             size++;
         } else {      
-            System.err.println("EEK: got buffer of " + b.buffer.length);
+            System.err.println("EEK: got buffer of " + m.buffer.length);
             
-            b.next = null;
+            m.next = null;
         }
     }
     
