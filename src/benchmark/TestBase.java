@@ -44,8 +44,8 @@ public class TestBase implements ResizeHandler {
     
     protected TestBase() throws IbisException, IOException, ClassNotFoundException { 
         StaticProperties s = new StaticProperties();
-        s.add("Serialization", "object");
-        s.add("Communication", "ManyToOne, Reliable, ExplicitReceipt");
+        s.add("Serialization", "data");
+        s.add("Communication", "ManyToOne, Reliable, AutoUpcalls");
         s.add("Worldmodel", "open");
 
         ibis = Ibis.createIbis(s, this);

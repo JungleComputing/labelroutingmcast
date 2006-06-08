@@ -10,7 +10,7 @@ public class LRMCOutputStream extends OutputStream {
 
     private LableRoutingMulticast mcast;
     
-    private int currentID = 0;  
+    private int currentID = 1;  
     private int currentNUM = 0;  
         
     private boolean closed = false;    

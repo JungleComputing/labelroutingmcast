@@ -10,12 +10,13 @@ import ibis.ipl.ReceivePortIdentifier;
 import ibis.ipl.SendPort;
 import ibis.ipl.StaticProperties;
 import ibis.ipl.WriteMessage;
+import ibis.ipl.Upcall;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 
-public class LableRoutingMulticast extends Thread {
+public class LableRoutingMulticast extends Thread implements Upcall {
 
     private final static int ZOMBIE_THRESHOLD = 10000;
 
@@ -34,28 +35,9 @@ public class LableRoutingMulticast extends Thread {
     private boolean changeOrder = false;    
     
     private String [] destinations = null;
-    /*
-    private MessageQueue sendQueue = new MessageQueue(10);
-    private Sender sender; 
     
-    private class Sender extends Thread { 
-        
-        public void run() { 
-            while (true) { 
-                Message m = sendQueue.dequeue();
-                
-                try { 
-                    internalSend(m);
-                } catch (Exception e) {
-                    System.err.println("Sender thread got exception! " + e);
-                    e.printStackTrace(System.err);
-                }
-                
-                //cache.put(m);
-            }
-        }        
-    }
-    */
+    private MessageQueue sendQueue = new MessageQueue(10);
+      
     public LableRoutingMulticast(Ibis ibis, MessageReceiver m, MessageCache c) 
         throws IOException, IbisException {
         this(ibis, m, c, false);
@@ -70,32 +52,17 @@ public class LableRoutingMulticast extends Thread {
                 
         StaticProperties s = new StaticProperties();
         s.add("Serialization", "data");
-        s.add("Communication", "ManyToOne, Reliable, ExplicitReceipt");
+        s.add("Communication", "ManyToOne, Reliable, AutoUpcalls");
         
         portType = ibis.createPortType("Ring", s);
         
-        receive = portType.createReceivePort("Ring-" + ibis.identifier().name());
+        receive = portType.createReceivePort("Ring-" + ibis.identifier().name(), this);
         receive.enableConnections();
-        
-        //sender = new Sender();
-        //sender.start();
-              
+        receive.enableUpcalls();
+                              
         this.start();
     }
-    
-    private final String [] getDestinationArray(int len) {
-        
-        return new String[len];
-        
-        /*
-        if (destinations == null || destinations.length < len) {         
-            destinations = new String[len];
-        } 
-               
-        return destinations;
-        */
-    }
-             
+      
     private void receive(ReadMessage rm) { 
 
         Message message = null;
@@ -107,12 +74,16 @@ public class LableRoutingMulticast extends Thread {
             message = cache.get(len, dst);                        
             message.read(rm, len, dst);
             
-            rm.finish();
+            sendQueue.enqueue(message);
+            
+           // rm.finish();
                        
-            if (dst > 0) { 
-               internalSend(message);
-               //sendQueue.enqueue(message);
-            }
+            //if (dst > 0) { 
+               //internalSend(message);
+            //    sendQueue.enqueue(message);
+            //} else { 
+            //    cache.put(message);
+           // }
             
         } catch (IOException e) {
             System.err.println("Failed to receive message: " + e);
@@ -122,17 +93,7 @@ public class LableRoutingMulticast extends Thread {
             if (message != null) { 
                 cache.put(message);
             }
-            
-            return;
-        }
-                    
-        try { 
-          //  message.up();
-            receiver.gotMessage(message);            
-        } catch (Throwable e) {
-            System.err.println("Delivery failed! " + e);
-            e.printStackTrace(System.err);
-        }
+        }                   
     }
               
     private SendPort getSendPort(String id) { 
@@ -286,6 +247,24 @@ public class LableRoutingMulticast extends Thread {
         boolean done = false;
         
         while (!done) {   
+
+            Message m = sendQueue.dequeue();
+            
+            try { 
+                internalSend(m);
+            } catch (Exception e) {
+                System.err.println("Sender thread got exception! " + e);
+                e.printStackTrace(System.err);
+            }
+
+            try { 
+              //  System.out.println("Delivery of " + m.len);
+                receiver.gotMessage(m);                 
+            } catch (Throwable e) {
+                System.err.println("Delivery failed! " + e);
+                e.printStackTrace(System.err);
+            }
+/*            
             
             try { 
                 receive(receive.receive());               
@@ -301,6 +280,7 @@ public class LableRoutingMulticast extends Thread {
             synchronized (this) {
                 done = mustStop;
             }
+            */
         }    
     }
 
@@ -324,5 +304,18 @@ public class LableRoutingMulticast extends Thread {
         } catch (Exception e) {
             // ignore, we tried...
         }
+    }
+
+    public void upcall(ReadMessage m) throws IOException {
+        
+        try { 
+            receive(m);               
+        } catch (Exception e) {               
+            synchronized (this) {
+                if (!mustStop) {                
+                    System.err.println("Receive failed! " + e);
+                } 
+            }               
+        }    
     }
 }

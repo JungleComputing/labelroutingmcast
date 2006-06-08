@@ -1,21 +1,19 @@
 package mcast.object;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.LinkedList;
-
-import mcast.lrm.IbisSorter;
-import mcast.lrm.Message;
-import mcast.lrm.MessageCache;
-import mcast.lrm.MessageReceiver;
-import mcast.lrm.LableRoutingMulticast;
-
-import ibis.ipl.Ibis;
 import ibis.io.SerializationBase;
 import ibis.io.SerializationInput;
 import ibis.io.SerializationOutput;
+import ibis.ipl.Ibis;
 import ibis.ipl.IbisException;
 import ibis.ipl.IbisIdentifier;
+
+import java.io.IOException;
+import java.util.LinkedList;
+
+import mcast.lrm.LableRoutingMulticast;
+import mcast.lrm.Message;
+import mcast.lrm.MessageCache;
+import mcast.lrm.MessageReceiver;
 
 public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
    
@@ -28,16 +26,15 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     
     private SerializationOutput sout;
     private SerializationInput sin;    
-        
-    private HashMap inputStreams = new HashMap(); 
-    private LinkedList available = new LinkedList();    
-
+          
     private final boolean signal;
     private final LinkedList objects = new LinkedList();
     
     private long totalData = 0;
     
     private MessageCache cache; 
+    
+    private Inputstreams inputStreams = new Inputstreams();
                
     public ObjectMulticaster(Ibis ibis) throws IOException, IbisException { 
         this(ibis, false, false);
@@ -65,27 +62,28 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
         lrmc.setDestination(dest);
     }
     
-    public synchronized boolean gotMessage(Message m) {
+    public boolean gotMessage(Message m) {
         
-        LRMCInputStream tmp = (LRMCInputStream) inputStreams.get(m.sender);
+        LRMCInputStream tmp = (LRMCInputStream) inputStreams.find(m.sender);
         
-        if (tmp == null) {
-            
+        if (tmp == null) {            
             if (signal) { 
                 tmp = new LRMCInputStream(m.sender, cache, this);
             } else { 
                 tmp = new LRMCInputStream(m.sender, cache);
             }
             
-            inputStreams.put(m.sender, tmp);
+            inputStreams.add(tmp);
         } 
           
-        if (!tmp.haveData()) {         
-            available.addLast(m.sender);
-            notifyAll();
-        } 
+        // If the stream did not have data yet, we add it to the 'streams with 
+        // data available' list (since it does have data now).
+        //if (!tmp.haveData()) {
+          
+        //} 
         
         tmp.addMessage(m);         
+        inputStreams.hasData(tmp);
         
         return false;
     }
@@ -109,30 +107,6 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
         return bout.bytesWritten();
     }
    
-    private synchronized LRMCInputStream getNextFilledStream() {
-
-        while (available.size() == 0) { 
-            try { 
-                wait();
-            } catch (Exception e) {
-                // ignore
-            }            
-        }
-        
-        return (LRMCInputStream) inputStreams.get(available.removeFirst());
-    }
-    
-    private synchronized void returnStreams(LRMCInputStream stream) { 
-
-        if (stream.haveData()) { 
-            // there is still some data left in the stream, so return it to 
-            // the 'available' list. 
-            available.addLast(stream.getSource());            
-        } else { 
-          //  inputStreams.remove(stream.getSource());
-        }
-    }
-        
     private Object explicitReceive() throws IOException, ClassNotFoundException {
         
         Object result = null; 
@@ -140,7 +114,7 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
         ClassNotFoundException cnfe = null;
         
         // Get the next stream that has some data
-        LRMCInputStream stream = getNextFilledStream(); 
+        LRMCInputStream stream = inputStreams.getNextFilledStream(); 
         
         // Plug it into the deserializer
         bin.setInputStream(stream);
@@ -156,7 +130,7 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
         }
         
         // Return the stream to the queue (if necessary) 
-        returnStreams(stream);
+        inputStreams.returnStream(stream);
      
         totalData += bin.bytesRead();
                 
@@ -235,7 +209,7 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
         }
         
         // Return the stream to the queue (if necessary) 
-        returnStreams(stream);     
+        inputStreams.returnStream(stream);     
         totalData += bin.bytesRead();
 
         if (succes) { 

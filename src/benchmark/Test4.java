@@ -62,8 +62,22 @@ public class Test4 extends TestBase {
         long size = 0;
         
         IbisIdentifier [] ids = getParticipants();
+        
+        while (ids.length == 0) {
+            
+            System.err.println("No machines available yet (sleeping).");
                 
+            try { 
+                Thread.sleep(5000);
+            } catch (Exception e) {
+                // TODO: handle exception
+            }
+            
+            ids = getParticipants();            
+        }
+
         System.err.println("Multicasting to " + ids.length + " machines.");
+        
         
         if (verbose) { 
             for (int i=0;i<ids.length;i++) { 
@@ -96,6 +110,9 @@ public class Test4 extends TestBase {
             try { 
                 dd = (DoubleData) omc.receive();
                 size += dd.getSize();
+                
+               // System.err.println("Got object");
+                
             } catch (Exception e) { 
                 System.err.println("Receive failed: " + e);
                 e.printStackTrace(System.err);

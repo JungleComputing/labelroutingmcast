@@ -13,10 +13,6 @@ public class MessageQueue {
     
     public synchronized void enqueue(Message m) { 
         
-        if (m.destinations == null || m.destinations.length == 0) { 
-            return; 
-        }
-                
         while (queue.size() >= limit) { 
             try { 
                 wait();

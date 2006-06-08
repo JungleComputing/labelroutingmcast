@@ -66,8 +66,9 @@ public class Message {
         id = rm.readInt();
         num = rm.readInt();            
         
-        if ((num & LAST_PACKET) != 0) {
-            last = true;
+        last = ((num & LAST_PACKET) != 0);
+
+        if (last) { 
             num &= ~LAST_PACKET; 
         }
         
@@ -84,6 +85,8 @@ public class Message {
             for (int i=0;i<dst;i++) { 
                 destinations[i] = rm.readString();
             }
+        } else { 
+            destinations = null;
         }
     } 
             

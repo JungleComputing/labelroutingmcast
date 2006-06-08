@@ -18,32 +18,43 @@ public class MessageCache {
     
     public synchronized void put(Message m) { 
         
-        return;
-        
-       // if (m.down() > 0) {
+        // if (m.down() > 0) {
             // message is still used somewhere!
        //     return;
        // }
-         /*
+         
         if (size < MAX_SIZE && m.buffer.length == MAX_MESSAGE_SIZE) {
             m.next = cache;
             cache = m;
             size++;
+            
+            //System.err.println("Adding message to cache! " + size + " " + 
+            //        m.buffer.length);
         } else {      
+            //System.err.println("Dropping message from cache! " + size + " " + 
+            //        m.buffer.length);
+            
             m.next = null;
-        }
-        */
+        }        
     }
     
     public synchronized Message get(int len, int dst) { 
         
         if (size == 0 || len > MAX_MESSAGE_SIZE) { 
+            
             if (len <= MAX_MESSAGE_SIZE) {
+                System.err.println("Creating new message of size " + 
+                        MAX_MESSAGE_SIZE + " " + size);
                 return new Message(MAX_MESSAGE_SIZE, dst);
             } else {
+                System.err.println("Creating new message of size " + 
+                        len + " " + size);
+
                 return new Message(len, dst);
             }
-        } 
+        } else { 
+        //    System.err.println("Returning cached message! " + size);            
+        }
         
         Message tmp = cache;
         cache = cache.next;
