@@ -38,13 +38,36 @@ public class MessageCache {
         }        
     }
     
+    public synchronized Message get(String sender, String [] destinations, 
+            int id, int num, byte [] message, int off, int len) { 
+        
+        if (size == 0) { 
+            return new Message(sender, destinations, id, num, message, off, len);
+        } 
+        
+        Message tmp = cache;
+        cache = cache.next;
+        tmp.next = null;
+        size--;
+        
+        tmp.sender = sender;
+        tmp.destinations = destinations;
+        tmp.id = id;
+        tmp.num = num;
+        tmp.buffer = message;
+        tmp.off = off;
+        tmp.len = len;
+        
+        return tmp;        
+    }
+    
     public synchronized Message get(int len, int dst) { 
         
         if (size == 0 || len > MAX_MESSAGE_SIZE) { 
             
             if (len <= MAX_MESSAGE_SIZE) {
-                System.err.println("Creating new message of size " + 
-                        MAX_MESSAGE_SIZE + " " + size);
+        //        System.err.println("Creating new message of size " + 
+        //                MAX_MESSAGE_SIZE + " " + size);
                 return new Message(MAX_MESSAGE_SIZE, dst);
             } else {
                 System.err.println("Creating new message of size " + 
@@ -52,8 +75,6 @@ public class MessageCache {
 
                 return new Message(len, dst);
             }
-        } else { 
-        //    System.err.println("Returning cached message! " + size);            
         }
         
         Message tmp = cache;
@@ -62,5 +83,22 @@ public class MessageCache {
         size--;
                 
         return tmp;        
-    }    
+    }
+    
+    /*
+    
+    public synchronized Message get() {
+        
+        if (size == 0) { 
+            return new Message();
+        } 
+        
+        Message tmp = cache;
+        cache = cache.next;
+        tmp.next = null;
+        size--;
+        
+        return tmp;
+    } 
+    */        
 }

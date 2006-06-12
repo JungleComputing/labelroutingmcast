@@ -33,7 +33,8 @@ public class TestBase implements ResizeHandler {
     protected static boolean ring = false;
     protected static boolean verbose = false;        
     protected static boolean signal = false;
-    
+    protected static boolean closed = false;
+        
     protected Ibis ibis;
     protected IbisIdentifier masterID;         
     
@@ -46,7 +47,12 @@ public class TestBase implements ResizeHandler {
         StaticProperties s = new StaticProperties();
         s.add("Serialization", "data");
         s.add("Communication", "ManyToOne, Reliable, AutoUpcalls");
-        s.add("Worldmodel", "open");
+        
+        if (closed) { 
+            s.add("Worldmodel", "closed");
+        } else { 
+            s.add("Worldmodel", "open");
+        }
 
         ibis = Ibis.createIbis(s, this);
         
@@ -228,6 +234,9 @@ public class TestBase implements ResizeHandler {
             } else if (args[i].equals("-verbose")) {
                 verbose = true;   
                 args[i] = null;
+            } else if (args[i].equals("-closed")) {
+                closed = true;   
+                args[i] = null;            
             } else if (args[i].equals("-signal")) {
                 signal = true;   
                 args[i] = null;

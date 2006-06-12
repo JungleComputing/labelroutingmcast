@@ -118,7 +118,7 @@ public class LRMCInputStream extends InputStream {
                 
             currentID  = current.id;
             currentNum = 0;
-    
+    /*
             if (memoryUsage > highBound) { 
                 System.err.println("++++ Current memory usage " + 
                         (memoryUsage/1024) + " KB, series " + currentID);
@@ -134,7 +134,7 @@ public class LRMCInputStream extends InputStream {
                 highBound = lowBound;
                 lowBound -= 1024*1024;                
             }
-                            
+      */                      
         } else if (currentID != current.id || currentNum != current.num) {                      
             
             // Oh dear, we seem to have missed a part of a series of packets. 

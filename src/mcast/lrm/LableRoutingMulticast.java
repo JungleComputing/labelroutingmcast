@@ -65,35 +65,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
       
     private void receive(ReadMessage rm) { 
 
-        Message message = null;
-        
-        try {
-            int len = rm.readInt();
-            int dst = rm.readInt();
-            
-            message = cache.get(len, dst);                        
-            message.read(rm, len, dst);
-            
-            sendQueue.enqueue(message);
-            
-           // rm.finish();
-                       
-            //if (dst > 0) { 
-               //internalSend(message);
-            //    sendQueue.enqueue(message);
-            //} else { 
-            //    cache.put(message);
-           // }
-            
-        } catch (IOException e) {
-            System.err.println("Failed to receive message: " + e);
-            e.printStackTrace(System.err);
-            rm.finish(e);
-            
-            if (message != null) { 
-                cache.put(message);
-            }
-        }                   
+           
     }
               
     private SendPort getSendPort(String id) { 
@@ -175,7 +147,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
             
     private void internalSend(Message m) {
       
-        if (m.destinations == null || m.destinations.length == 0) { 
+        if (m.destinations == null || m.numDestinations == 0) { 
             return; 
         }
         
@@ -188,7 +160,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         do { 
             id = m.destinations[index++];
             sp = getSendPort(id);
-        } while (sp == null && index < m.destinations.length);
+        } while (sp == null && index < m.numDestinations);
         
         if (sp == null) { 
             // No working destinations where found, so give up!
@@ -201,7 +173,8 @@ public class LableRoutingMulticast extends Thread implements Upcall {
             m.write(wm, index);        
             wm.finish();
         } catch (IOException e) {
-            System.err.println("Write to " + id + " failed!");            
+            System.err.println("Write to " + id + " failed! " + e);
+            e.printStackTrace(System.err);
             sendports.remove(id);            
         }
     } 
@@ -223,10 +196,12 @@ public class LableRoutingMulticast extends Thread implements Upcall {
     
     public void send(int id, int num, byte [] message, int off, int len) {
                 
-        Message m = new Message(ibis.identifier().name(), destinations, id, num,
+        Message m = cache.get(ibis.identifier().name(), destinations, id, num,
                 message, off, len);
-        
+              
         internalSend(m);
+        
+        cache.put(m);
     } 
 
     public void send(Message m) {
@@ -306,16 +281,28 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         }
     }
 
-    public void upcall(ReadMessage m) throws IOException {
+    public void upcall(ReadMessage rm) throws IOException {
         
-        try { 
-            receive(m);               
-        } catch (Exception e) {               
-            synchronized (this) {
-                if (!mustStop) {                
-                    System.err.println("Receive failed! " + e);
-                } 
-            }               
-        }    
+        Message message = null; 
+            
+        try {
+            int len = rm.readInt();
+            int dst = rm.readInt();
+            
+            message = cache.get(len, dst);                        
+            message.read(rm, len, dst);
+            
+            //message.read(rm);            
+            sendQueue.enqueue(message);
+            
+        } catch (IOException e) {
+            System.err.println("Failed to receive message: " + e);
+            e.printStackTrace(System.err);
+            rm.finish(e);
+            
+            if (message != null) { 
+                cache.put(message);
+            }
+        }               
     }
 }

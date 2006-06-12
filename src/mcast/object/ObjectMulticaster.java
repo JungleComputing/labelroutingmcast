@@ -76,12 +76,6 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
             inputStreams.add(tmp);
         } 
           
-        // If the stream did not have data yet, we add it to the 'streams with 
-        // data available' list (since it does have data now).
-        //if (!tmp.haveData()) {
-          
-        //} 
-        
         tmp.addMessage(m);         
         inputStreams.hasData(tmp);
         
