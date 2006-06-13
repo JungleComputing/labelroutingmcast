@@ -27,7 +27,8 @@ public class TestBase implements ResizeHandler {
     protected static int size = 32*1024;
     protected static int count = 1024;
     protected static int repeat = 10;
-    
+    protected static int cacheSize = 250;
+        
     protected static boolean autoSort = false;
     protected static boolean sortOnce = false;    
     protected static boolean ring = false;
@@ -221,6 +222,9 @@ public class TestBase implements ResizeHandler {
                 args[i] = args[i-1] = null;
             } else if (args[i].equals("-size")) {
                 size = Integer.parseInt(args[++i]);
+                args[i] = args[i-1] = null;
+            } else if (args[i].equals("-cache")) {
+                cacheSize = Integer.parseInt(args[++i]);
                 args[i] = args[i-1] = null;
             } else if (args[i].equals("-sortAuto")) {
                 autoSort = true;

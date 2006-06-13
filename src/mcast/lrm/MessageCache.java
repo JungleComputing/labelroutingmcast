@@ -39,7 +39,7 @@ public class MessageCache {
     }
     
     public synchronized Message get(String sender, String [] destinations, 
-            int id, int num, byte [] message, int off, int len) { 
+            int id, int num, byte [] message, int off, int len, boolean local) { 
         
         if (size == 0) { 
             return new Message(sender, destinations, id, num, message, off, len);
@@ -57,6 +57,7 @@ public class MessageCache {
         tmp.buffer = message;
         tmp.off = off;
         tmp.len = len;
+        tmp.local = local;
         
         return tmp;        
     }

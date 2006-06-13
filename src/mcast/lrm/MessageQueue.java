@@ -5,7 +5,7 @@ import java.util.LinkedList;
 public class MessageQueue {
 
     private LinkedList queue = new LinkedList();    
-    private final int limit;
+    private int limit;
     
     public MessageQueue(int limit) { 
         this.limit = limit;
@@ -13,8 +13,9 @@ public class MessageQueue {
     
     public synchronized void enqueue(Message m) { 
         
-        while (queue.size() >= limit) { 
+        while (queue.size() >= limit) {            
             try { 
+               System.err.println("Send queue hit limit! (" + limit + ")");
                 wait();
             } catch (Exception e) {
                 // TODO: handle exception
@@ -22,7 +23,10 @@ public class MessageQueue {
         }
         
         queue.addLast(m);
-        notifyAll();
+        
+        if (queue.size() == 1) { 
+            notifyAll();
+        } 
     }
     
     public synchronized Message dequeue() { 
@@ -35,7 +39,9 @@ public class MessageQueue {
             }
         }
         
-        notifyAll();
+        if (queue.size() == limit) { 
+            notifyAll();
+        } 
         return (Message) queue.removeFirst();
     }
 }

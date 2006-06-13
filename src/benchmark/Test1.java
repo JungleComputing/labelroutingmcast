@@ -29,10 +29,11 @@ public class Test1 extends TestBase implements MessageReceiver {
     
     private LableRoutingMulticast lrmcast;
         
-    private MessageCache cache = new MessageCache(1);
+    private MessageCache cache;
     
     private Test1() throws IbisException, IOException, ClassNotFoundException {      
         super();        
+        cache = new MessageCache(cacheSize);        
         lrmcast = new LableRoutingMulticast(ibis, this, cache, autoSort);        
     }
     
@@ -75,7 +76,7 @@ public class Test1 extends TestBase implements MessageReceiver {
         
         for (int i=0;i<count;i++) { 
             lrmcast.send(0, 0, data, 0, data.length);        
-        }         
+        }     
         
         if (ring) {
             // Wait for my own messages to appear
@@ -92,10 +93,15 @@ public class Test1 extends TestBase implements MessageReceiver {
         
         long end = System.currentTimeMillis();
 
+        long bytes = lrmcast.getBytes(true);
+        
         long time = end-start;
         double tp = ((count*size)/(1024.0*1024.0))/(time/1000.0);
+        double rtp = ((bytes)/(1024.0*1024.0))/(time/1000.0);
+        long overhead = (bytes-(count*size))/count;        
         
-        System.out.println("Test took " + time + " ms. TP = " + tp + " MB/s.");
+        System.out.println("Test took " + time + " ms. TP = " + tp + " MB/s (" 
+                + rtp + " MB/s, overhead = " + overhead + "per message)");
     }
         
     public synchronized boolean gotMessage(Message b) { 
@@ -105,6 +111,8 @@ public class Test1 extends TestBase implements MessageReceiver {
         if (ring && receivedMessages == count) { 
             notifyAll();
         }
+        
+        cache.put(b);
         
         return true;
     }

@@ -28,12 +28,12 @@ public class LRMCOutputStream extends OutputStream {
         closed = true;
     }
     
-    public void write(byte [] b, int off, int len, boolean lastPacket) {
+    public byte [] write(byte [] b, int off, int len, boolean lastPacket) {
         
        if (closed) { 
            System.err.println("____ got write(" + off + ", " + len + 
                    ") while closed!");
-           return;
+           return b;
        }
         
 //       System.err.println("____ got write(" + currentID + ", byte[" + len + "])");
@@ -50,7 +50,8 @@ public class LRMCOutputStream extends OutputStream {
        } else { 
            mcast.send(currentID, currentNUM, b, off, len);
        }
-    //   System.err.println("____ done write(" + off + ", " + len + ")");       
+       
+       return b; // new byte[b.length];
     }
     
     public void write(int b) throws IOException {

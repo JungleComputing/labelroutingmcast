@@ -36,7 +36,9 @@ public class LableRoutingMulticast extends Thread implements Upcall {
     
     private String [] destinations = null;
     
-    private MessageQueue sendQueue = new MessageQueue(10);
+    private long bytes = 0;
+    
+    private MessageQueue sendQueue = new MessageQueue(1000);
       
     public LableRoutingMulticast(Ibis ibis, MessageReceiver m, MessageCache c) 
         throws IOException, IbisException {
@@ -62,13 +64,8 @@ public class LableRoutingMulticast extends Thread implements Upcall {
                               
         this.start();
     }
-      
-    private void receive(ReadMessage rm) { 
-
-           
-    }
-              
-    private SendPort getSendPort(String id) { 
+                       
+    private synchronized SendPort getSendPort(String id) { 
         SendPort sp = (SendPort) sendports.get(id);
         
         if (sp == null) {
@@ -171,7 +168,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         try { 
             WriteMessage wm = sp.newMessage();
             m.write(wm, index);        
-            wm.finish();
+            bytes += wm.finish();
         } catch (IOException e) {
             System.err.println("Write to " + id + " failed! " + e);
             e.printStackTrace(System.err);
@@ -194,14 +191,23 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         }
     }
     
+    public long getBytes(boolean reset) { 
+        
+        long tmp = bytes;
+        
+        if (reset) { 
+            bytes = 0;
+        }
+        
+        return tmp;
+    }
+    
     public void send(int id, int num, byte [] message, int off, int len) {
                 
         Message m = cache.get(ibis.identifier().name(), destinations, id, num,
-                message, off, len);
-              
-        internalSend(m);
+                message, off, len, false);              
         
-        cache.put(m);
+        internalSend(m);
     } 
 
     public void send(Message m) {
@@ -214,6 +220,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
             m.sender = ibis.identifier().name();
         }
         
+        //sendQueue.enqueue(m);
         internalSend(m);
     } 
     
@@ -232,30 +239,16 @@ public class LableRoutingMulticast extends Thread implements Upcall {
                 e.printStackTrace(System.err);
             }
 
-            try { 
-              //  System.out.println("Delivery of " + m.len);
-                receiver.gotMessage(m);                 
-            } catch (Throwable e) {
-                System.err.println("Delivery failed! " + e);
-                e.printStackTrace(System.err);
-            }
-/*            
-            
-            try { 
-                receive(receive.receive());               
-            } catch (Exception e) {
-                
-                synchronized (this) {
-                    if (!mustStop) {                
-                        System.err.println("Receive failed! " + e);
-                    } 
-                } 
-            }  
-            
-            synchronized (this) {
-                done = mustStop;
-            }
-            */
+            if (!m.local) {             
+                try { 
+                    receiver.gotMessage(m);                 
+                } catch (Throwable e) {
+                    System.err.println("Delivery failed! " + e);
+                    e.printStackTrace(System.err);
+                }            
+            } else {             
+                cache.put(m);
+            } 
         }    
     }
 
@@ -290,9 +283,9 @@ public class LableRoutingMulticast extends Thread implements Upcall {
             int dst = rm.readInt();
             
             message = cache.get(len, dst);                        
-            message.read(rm, len, dst);
-            
-            //message.read(rm);            
+            message.read(rm, len, dst);            
+            message.local = false;
+
             sendQueue.enqueue(message);
             
         } catch (IOException e) {

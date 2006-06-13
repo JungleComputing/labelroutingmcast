@@ -82,12 +82,12 @@ public final class BufferedArrayOutputStream extends DataOutputStream {
         if (forced || index + incr > BUF_SIZE) {
             bytes += index;
 
-            out.write(buffer, 0, index, forced);
+            // The write will return a new buffer for us which is (at least)
+            // the same size as the old one. 
+            buffer = out.write(buffer, 0, index, forced);
             
             // Assume we lost the buffer here 
-            index = 0;
-            buffer = new byte[BUF_SIZE];      
-            // TODO: optimize!
+            index = 0;            
         }
     }
 

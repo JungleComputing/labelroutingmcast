@@ -20,11 +20,13 @@ public class Message {
         
     public int id;
     public int num;
-    public boolean last;
-    
+
     public byte [] buffer;
     public int off;    
     public int len;
+    
+    public boolean last;
+    public boolean local;
     
     public Message next;
         
@@ -128,7 +130,7 @@ public class Message {
     
     void write(WriteMessage wm, int fromDest) throws IOException { 
         
-        // First write the two variable lengths present in the message.        
+        // First write the two variable lengths present in the message.   
         wm.writeInt(len);                
         wm.writeInt(numDestinations-fromDest);
         
