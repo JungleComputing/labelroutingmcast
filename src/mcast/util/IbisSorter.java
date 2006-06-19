@@ -1,7 +1,8 @@
-package mcast.lrm;
+package mcast.util;
 
 import java.util.Comparator;
 import java.util.Arrays;
+
 
 import ibis.ipl.IbisIdentifier;
 

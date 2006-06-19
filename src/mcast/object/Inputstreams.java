@@ -1,21 +1,43 @@
 package mcast.object;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-
 public class Inputstreams {
 
-    private HashMap inputStreams = new HashMap();     
+    private static final int DEFAULT_SIZE = 64;
     
-    private LinkedList available = new LinkedList();   
-    private HashMap hasData = new HashMap();     
+    private LRMCInputStream [] inputStreams = new LRMCInputStream[DEFAULT_SIZE];    
+    private boolean [] hasData = new boolean[DEFAULT_SIZE];
     
-    public synchronized void add(LRMCInputStream is) {         
-        inputStreams.put(is.getSource(), is);        
+    private int streamsWithData = 0;
+    private int index = 0;
+            
+    public synchronized void add(LRMCInputStream is, short sender) {
+        
+        if (sender > inputStreams.length) {             
+            resize(sender);
+        }
+        
+        inputStreams[sender] = is;        
+    } 
+    
+    private void resize(int minimumSize) { 
+        
+        int newSize = hasData.length;        
+        
+        while (newSize < minimumSize) {
+            newSize *= 2; 
+        }
+        
+        LRMCInputStream [] tmp1 = new LRMCInputStream[newSize];
+        System.arraycopy(inputStreams, 0, tmp1, 0, inputStreams.length);
+        inputStreams = tmp1;
+                        
+        boolean [] tmp2 = new boolean[newSize];        
+        System.arraycopy(hasData, 0, tmp2, 0, hasData.length);
+        hasData = tmp2;
     }
         
-    public synchronized LRMCInputStream find(String sender) {         
-        return (LRMCInputStream) inputStreams.get(sender);        
+    public synchronized LRMCInputStream find(short sender) {         
+        return inputStreams[sender];        
     }
     
     public void returnStream(LRMCInputStream is) {        
@@ -24,20 +46,18 @@ public class Inputstreams {
         }        
     }    
     
-    public synchronized void hasData(LRMCInputStream is) {
+    public synchronized void hasData(LRMCInputStream is) {        
+        hasData[is.getSource()] = true;        
+        streamsWithData++;
         
-        String sender = is.getSource();
-        
-        if (!hasData.containsKey(sender)) {
-            hasData.put(sender, sender);
-            available.addLast(sender);
+        if (streamsWithData > 1) {                 
             notifyAll();
         } 
     }
     
     public synchronized LRMCInputStream getNextFilledStream() {
 
-        while (available.size() == 0) { 
+        while (streamsWithData == 0) { 
             try { 
                 wait();
             } catch (Exception e) {
@@ -45,7 +65,18 @@ public class Inputstreams {
             }            
         }
         
-        String tmp = (String) hasData.remove(available.removeFirst());        
-        return (LRMCInputStream) inputStreams.get(tmp);
+        int size = inputStreams.length;
+                
+        for (int i=0;i<size;i++) { 
+            
+            if (hasData[(index+i)%size]) { 
+                index = (index+i)%size;
+                hasData[index] = false;
+            }
+        }
+
+        streamsWithData--;
+        
+        return inputStreams[index];
     }
 }

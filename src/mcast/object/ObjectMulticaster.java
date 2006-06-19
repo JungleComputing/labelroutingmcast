@@ -62,6 +62,14 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
         lrmc.setDestination(dest);
     }
     
+    public void addIbis(IbisIdentifier id) { 
+        lrmc.addIbis(id);
+    }
+    
+    public void removeIbis(IbisIdentifier id) { 
+        lrmc.removeIbis(id);
+    }    
+        
     public boolean gotMessage(Message m) {
         
         LRMCInputStream tmp = (LRMCInputStream) inputStreams.find(m.sender);
@@ -73,7 +81,7 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
                 tmp = new LRMCInputStream(m.sender, cache);
             }
             
-            inputStreams.add(tmp);
+            inputStreams.add(tmp, m.sender);
         } 
           
         tmp.addMessage(m);         

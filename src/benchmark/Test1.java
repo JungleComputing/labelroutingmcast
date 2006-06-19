@@ -25,14 +25,18 @@ import mcast.lrm.LableRoutingMulticast;
  */
 public class Test1 extends TestBase implements MessageReceiver {
        
-    private int receivedMessages = 0;
-    
+    private int receivedMessages = 0;    
+        
     private LableRoutingMulticast lrmcast;
         
     private MessageCache cache;
     
     private Test1() throws IbisException, IOException, ClassNotFoundException {      
-        super();        
+        super();
+    } 
+    
+    public void init() throws IOException, IbisException {
+        cache = new MessageCache(cacheSize);        
         cache = new MessageCache(cacheSize);        
         lrmcast = new LableRoutingMulticast(ibis, this, cache, autoSort);        
     }
@@ -75,7 +79,7 @@ public class Test1 extends TestBase implements MessageReceiver {
         lrmcast.setDestination(ids);
         
         for (int i=0;i<count;i++) { 
-            lrmcast.send(0, 0, data, 0, data.length);        
+            lrmcast.send(0, 0, data, 0, data.length);
         }     
         
         if (ring) {
@@ -101,7 +105,7 @@ public class Test1 extends TestBase implements MessageReceiver {
         long overhead = (bytes-(count*size))/count;        
         
         System.out.println("Test took " + time + " ms. TP = " + tp + " MB/s (" 
-                + rtp + " MB/s, overhead = " + overhead + "per message)");
+                + rtp + " MB/s, overhead = " + overhead + " per message)");
     }
         
     public synchronized boolean gotMessage(Message b) { 
@@ -115,6 +119,14 @@ public class Test1 extends TestBase implements MessageReceiver {
         cache.put(b);
         
         return true;
+    }
+    
+    public void addIbis(IbisIdentifier id) {
+        lrmcast.addIbis(id);
+    }
+    
+    public void removeIbis(IbisIdentifier id) {
+        lrmcast.removeIbis(id);
     }
     
     public static void main(String [] args) {

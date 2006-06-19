@@ -1,0 +1,4 @@
+set terminal postscript
+set xlabel "Machines"
+set ylabel "Throughput (MByte/sec)"
+plot "results-object-new-1k.txt" with linespoints title "New 3x1K doubles, 8K buffes", "results-object-new-100k.txt" with linespoints title "New 3x100K double, 8K buffes", "results-object.txt" with linespoints title "Old 3x1K doubles, 8k buffers"

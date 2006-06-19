@@ -1,4 +1,4 @@
-package mcast.lrm;
+package mcast.util;
 
 import java.util.LinkedList;
 

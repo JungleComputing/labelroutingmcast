@@ -70,7 +70,18 @@ public class Test5 extends TestBase {
             
     private Test5() throws IbisException, IOException, ClassNotFoundException {         
         super();
+    } 
+    
+    public void init() throws IOException, IbisException {
         omc = new ObjectMulticaster(ibis);
+    }
+    
+    public void addIbis(IbisIdentifier id) {
+        omc.addIbis(id);
+    }
+    
+    public void removeIbis(IbisIdentifier id) {
+        omc.removeIbis(id);
     }
     
     private void start() throws IOException, ClassNotFoundException { 

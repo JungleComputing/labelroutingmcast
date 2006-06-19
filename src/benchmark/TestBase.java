@@ -3,7 +3,7 @@ package benchmark;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import mcast.lrm.IbisSorter;
+import mcast.util.IbisSorter;
 
 import ibis.ipl.*;
 
@@ -20,7 +20,7 @@ import ibis.ipl.*;
  * @version 1.0 May 9, 2006
  * @since 1.0
  */
-public class TestBase implements ResizeHandler {
+public abstract class TestBase implements ResizeHandler {
        
     protected static int minMachines = 1;
     
@@ -59,8 +59,12 @@ public class TestBase implements ResizeHandler {
         
         System.err.println("Ibis created!");
                 
+        init();
+        
         ibis.enableResizeUpcalls();
     }
+    
+    public abstract void init() throws IOException, IbisException; 
     
     protected void waitForEnoughMachines() { 
         
@@ -171,6 +175,14 @@ public class TestBase implements ResizeHandler {
         System.err.println("Got master " + masterID);
     }
     
+    public void addIbis(IbisIdentifier id) {
+        // empty        
+    }
+    
+    public void removeIbis(IbisIdentifier id) {
+        // empty        
+    }
+        
     public synchronized void joined(IbisIdentifier id) {
         
         System.err.println("Join " + id);
@@ -185,7 +197,10 @@ public class TestBase implements ResizeHandler {
             System.err.println("Master is " + id);
         }
         
-        participantsChanged = true;        
+        participantsChanged = true;
+        
+        // Inform the subclass if necessary
+        addIbis(id);
     }
 
     public synchronized void left(IbisIdentifier id) {
@@ -197,6 +212,9 @@ public class TestBase implements ResizeHandler {
         }
         
         participantsChanged = true;
+        
+        // Inform the subclass if necessary
+        removeIbis(id);
     }
 
     public synchronized void died(IbisIdentifier id) {        

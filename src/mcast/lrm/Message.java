@@ -6,6 +6,7 @@ package mcast.lrm;
 import java.io.IOException;
 
 
+import ibis.ipl.IbisIdentifier;
 import ibis.ipl.ReadMessage;
 import ibis.ipl.WriteMessage;
 
@@ -13,9 +14,9 @@ public class Message {
     
     public static final int LAST_PACKET = 1 << 31;
     
-    public String sender;
+    public short sender;
     
-    public String [] destinations;
+    public short [] destinations;
     public int numDestinations;
         
     public int id;
@@ -37,11 +38,12 @@ public class Message {
        
     Message(int size, int destSize) { 
         buffer = new byte[size];
-        destinations = new String[destSize];
+        destinations = new short[destSize];
         numDestinations = destSize;
     }
    
-    Message(String sender, String [] destinations, int id, int num, byte [] buffer, int off, int len) { 
+    Message(short sender, short [] destinations, int id, int num, byte [] buffer, int off, int len) { 
+        this.sender = sender;
         this.destinations = destinations;
         this.id = id;
         this.num = num;
@@ -56,7 +58,7 @@ public class Message {
         this.off = 0;
         this.len = len;
         
-        sender = rm.readString();        
+        sender = rm.readShort();        
         id = rm.readInt();
         num = rm.readInt();            
         
@@ -75,12 +77,10 @@ public class Message {
         if (numDestinations > 0) {
             // TODO optimize!            
             if (destinations == null || destinations.length < numDestinations) {
-                destinations = new String[dst];
+                destinations = new short[dst];
             } 
         
-            for (int i=0;i<numDestinations;i++) { 
-                destinations[i] = rm.readString();
-            }
+            rm.readArray(destinations, 0, dst);
         } else { 
             destinations = null;
         }
@@ -130,13 +130,14 @@ public class Message {
     
     void write(WriteMessage wm, int fromDest) throws IOException { 
         
+        int destinationLength = numDestinations-fromDest; 
+        
         // First write the two variable lengths present in the message.   
         wm.writeInt(len);                
-        wm.writeInt(numDestinations-fromDest);
+        wm.writeInt(destinationLength);
         
         // Then write the content that guaranteed to be there        
-        wm.writeString(sender);
-
+        wm.writeShort(sender);
         wm.writeInt(id);
         
         if (last) { 
@@ -150,8 +151,8 @@ public class Message {
             wm.writeArray(buffer, off, len);
         }
         
-        for (int i=fromDest;i<numDestinations;i++) { 
-            wm.writeString(destinations[i]);
-        }                                             
+        if (destinationLength > 0) { 
+            wm.writeArray(destinations, fromDest, destinationLength);
+        }                                           
     }    
 }

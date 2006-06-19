@@ -2,7 +2,7 @@ package mcast.lrm;
 
 public class MessageCache {
 
-    private final int MAX_MESSAGE_SIZE = 10*1024;
+    private final int MAX_MESSAGE_SIZE = 64*1024;
     private final int MAX_SIZE;
     
     private Message cache;
@@ -38,7 +38,7 @@ public class MessageCache {
         }        
     }
     
-    public synchronized Message get(String sender, String [] destinations, 
+    public synchronized Message get(short sender, short [] destinations, 
             int id, int num, byte [] message, int off, int len, boolean local) { 
         
         if (size == 0) { 

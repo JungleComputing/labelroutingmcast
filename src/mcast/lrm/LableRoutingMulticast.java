@@ -9,12 +9,15 @@ import ibis.ipl.ReceivePort;
 import ibis.ipl.ReceivePortIdentifier;
 import ibis.ipl.SendPort;
 import ibis.ipl.StaticProperties;
-import ibis.ipl.WriteMessage;
 import ibis.ipl.Upcall;
+import ibis.ipl.WriteMessage;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Iterator;
+
+import mcast.util.BoundedObjectQueue;
+import mcast.util.DynamicObjectArray;
+import mcast.util.IbisSorter;
 
 public class LableRoutingMulticast extends Thread implements Upcall {
 
@@ -28,17 +31,23 @@ public class LableRoutingMulticast extends Thread implements Upcall {
     
     private final MessageCache cache;
     
-    private final HashMap sendports = new HashMap();    
-    private final HashMap diedmachines = new HashMap();
+    private final DynamicObjectArray sendports = new DynamicObjectArray();    
+    private final DynamicObjectArray diedmachines = new DynamicObjectArray();
     
     private boolean mustStop = false;    
     private boolean changeOrder = false;    
     
-    private String [] destinations = null;
+    private short [] destinations = null;
     
+    private HashMap knownIbis = new HashMap();
+    private DynamicObjectArray ibisList = new DynamicObjectArray();
+        
+    private short nextIbisID = 0;
+    private short myID = -1;
+   
     private long bytes = 0;
     
-    private MessageQueue sendQueue = new MessageQueue(1000);
+    private BoundedObjectQueue sendQueue = new BoundedObjectQueue(64);
       
     public LableRoutingMulticast(Ibis ibis, MessageReceiver m, MessageCache c) 
         throws IOException, IbisException {
@@ -65,7 +74,12 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         this.start();
     }
                        
-    private synchronized SendPort getSendPort(String id) { 
+    private synchronized SendPort getSendPort(int id) {
+        
+        if (id == -1) { 
+            return null;
+        }
+                
         SendPort sp = (SendPort) sendports.get(id);
         
         if (sp == null) {
@@ -102,9 +116,14 @@ public class LableRoutingMulticast extends Thread implements Upcall {
             ReceivePortIdentifier tmp = null; 
                             
             try { 
-                sp = portType.createSendPort();
+                sp = portType.createSendPort();         
                 
-                tmp = ibis.registry().lookupReceivePort("Ring-" + id, 1000);
+                IbisIdentifier ibisID = (IbisIdentifier) ibisList.get(id); 
+                
+                if (ibisID != null) { 
+                    tmp = ibis.registry().lookupReceivePort("Ring-" 
+                            + ibisID.name(), 1000);
+                } 
                 
                 if (tmp != null) {                 
                     sp.connect(tmp, 1000);                
@@ -152,11 +171,11 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         // the next one, etc. If no working destination is found we give up.  
         int index = 0;        
         SendPort sp = null;
-        String id = null;
+        short id = -1;
         
         do { 
-            id = m.destinations[index++];
-            sp = getSendPort(id);
+            id = m.destinations[index++]; 
+            sp = getSendPort(id); 
         } while (sp == null && index < m.numDestinations);
         
         if (sp == null) { 
@@ -176,6 +195,40 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         }
     } 
 
+    public synchronized void addIbis(IbisIdentifier ibis) {
+        
+        if (!knownIbis.containsKey(ibis)) { 
+            knownIbis.put(ibis, new Short(nextIbisID));            
+            ibisList.put(nextIbisID, ibis);
+                        
+            if (ibis.equals(this.ibis.identifier())) { 
+                myID = nextIbisID;
+            }
+        
+            nextIbisID++;
+        }        
+    }
+
+    public synchronized void removeIbis(IbisIdentifier ibis) {
+        Short tmp = (Short) knownIbis.remove(ibis);
+        
+        if (tmp != null) { 
+            ibisList.remove(tmp.shortValue());
+        }
+    }
+
+    private synchronized short getIbisID(IbisIdentifier ibis) {
+        
+        Short s = (Short) knownIbis.get(ibis);
+        
+        if (s != null) { 
+            return s.shortValue();
+        } else { 
+            //System.err.println("Ibis " + ibis + " not known!");
+            return -1;
+        }
+    }
+    
     public void setDestination(IbisIdentifier [] destinations) { 
 
         if (changeOrder) { 
@@ -184,10 +237,10 @@ public class LableRoutingMulticast extends Thread implements Upcall {
             IbisSorter.sort(ibis.identifier(), destinations);                     
         }
         
-        this.destinations = new String[destinations.length];
+        this.destinations = new short[destinations.length];
         
         for (int i=0;i<destinations.length;i++) { 
-            this.destinations[i] = destinations[i].name();
+            this.destinations[i] = getIbisID(destinations[i]);
         }
     }
     
@@ -204,7 +257,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
     
     public void send(int id, int num, byte [] message, int off, int len) {
                 
-        Message m = cache.get(ibis.identifier().name(), destinations, id, num,
+        Message m = cache.get(myID, destinations, id, num,
                 message, off, len, false);              
         
         internalSend(m);
@@ -216,9 +269,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
             m.destinations = destinations;
         }
         
-        if (m.sender == null) { 
-            m.sender = ibis.identifier().name();
-        }
+        m.sender = myID;
         
         //sendQueue.enqueue(m);
         internalSend(m);
@@ -230,7 +281,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         
         while (!done) {   
 
-            Message m = sendQueue.dequeue();
+            Message m = (Message) sendQueue.dequeue();
             
             try { 
                 internalSend(m);
@@ -239,7 +290,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
                 e.printStackTrace(System.err);
             }
 
-            if (!m.local) {             
+            if (!m.local) {        
                 try { 
                     receiver.gotMessage(m);                 
                 } catch (Throwable e) {
@@ -260,12 +311,15 @@ public class LableRoutingMulticast extends Thread implements Upcall {
                 
         try {             
             receive.disableConnections();
-        
-            Iterator i = sendports.values().iterator();
-        
-            while (i.hasNext()) { 
-                SendPort tmp = (SendPort) i.next();
-                tmp.close();
+
+            int last = sendports.last();
+            
+            for (int i=0;i<last;i++) { 
+                SendPort tmp = (SendPort) sendports.get(i);
+                
+                if (tmp != null) {                 
+                    tmp.close();
+                } 
             }
             
             receive.close(1000);

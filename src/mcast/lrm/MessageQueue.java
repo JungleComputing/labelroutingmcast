@@ -15,7 +15,7 @@ public class MessageQueue {
         
         while (queue.size() >= limit) {            
             try { 
-               System.err.println("Send queue hit limit! (" + limit + ")");
+               //System.err.println("Send queue hit limit! (" + limit + ")");
                 wait();
             } catch (Exception e) {
                 // TODO: handle exception
@@ -42,6 +42,7 @@ public class MessageQueue {
         if (queue.size() == limit) { 
             notifyAll();
         } 
+        
         return (Message) queue.removeFirst();
     }
 }

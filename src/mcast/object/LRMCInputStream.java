@@ -1,5 +1,7 @@
 package mcast.object;
 
+import ibis.ipl.IbisIdentifier;
+
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -10,7 +12,7 @@ import mcast.lrm.MessageCache;
 
 public class LRMCInputStream extends InputStream {
     
-    private String source;       
+    private short source;       
     private ObjectReceiver receiver;
         
     private Message current = null; 
@@ -30,11 +32,11 @@ public class LRMCInputStream extends InputStream {
        
     private MessageCache cache; 
            
-    public LRMCInputStream(String source, MessageCache cache) { 
+    public LRMCInputStream(short source, MessageCache cache) { 
         this(source, cache, null);
     }
     
-    public LRMCInputStream(String source, MessageCache cache, 
+    public LRMCInputStream(short source, MessageCache cache, 
             ObjectReceiver receiver) {  
         
         this.source = source;
@@ -42,7 +44,7 @@ public class LRMCInputStream extends InputStream {
         this.receiver = receiver;
     }
         
-    public String getSource() { 
+    public short getSource() { 
         return source;
     }
     
