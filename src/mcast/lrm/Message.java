@@ -6,7 +6,6 @@ package mcast.lrm;
 import java.io.IOException;
 
 
-import ibis.ipl.IbisIdentifier;
 import ibis.ipl.ReadMessage;
 import ibis.ipl.WriteMessage;
 

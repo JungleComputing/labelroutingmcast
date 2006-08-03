@@ -1,7 +1,5 @@
 package mcast.object;
 
-import ibis.ipl.IbisIdentifier;
-
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -27,8 +25,8 @@ public class LRMCInputStream extends InputStream {
     private Message head;
     private Message tail;
    
-    private int lowBound = 0;
-    private int highBound = 1024*1024;
+//    private int lowBound = 0;
+//    private int highBound = 1024*1024;
        
     private MessageCache cache; 
            
