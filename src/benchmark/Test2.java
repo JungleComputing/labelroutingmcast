@@ -27,7 +27,7 @@ public class Test2 extends TestBase {
     } 
     
     public void init() throws IOException, IbisException {         
-        omc = new ObjectMulticaster(ibis, autoSort, signal);
+        omc = new ObjectMulticaster(ibis, autoSort, signal, "test");
     }
     
     public void addIbis(IbisIdentifier id) {

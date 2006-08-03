@@ -34,7 +34,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
     private final DynamicObjectArray sendports = new DynamicObjectArray();    
     private final DynamicObjectArray diedmachines = new DynamicObjectArray();
     
-    private boolean mustStop = false;    
+//    private boolean mustStop = false;    
     private boolean changeOrder = false;    
     
     private short [] destinations = null;
@@ -49,31 +49,32 @@ public class LableRoutingMulticast extends Thread implements Upcall {
     
     private BoundedObjectQueue sendQueue = new BoundedObjectQueue(64);
       
-    public LableRoutingMulticast(Ibis ibis, MessageReceiver m, MessageCache c) 
+    public LableRoutingMulticast(Ibis ibis, MessageReceiver m, MessageCache c, String name) 
         throws IOException, IbisException {
-        this(ibis, m, c, false);
+        this(ibis, m, c, false, name);
     }
             
     public LableRoutingMulticast(Ibis ibis, MessageReceiver m, MessageCache c, 
-            boolean changeOrder) throws IOException, IbisException {
+            boolean changeOrder, String name) throws IOException, IbisException {
         this.ibis = ibis;    
         this.receiver = m;
         this.cache = c;
         this.changeOrder = changeOrder;
-                
+
         StaticProperties s = new StaticProperties();
         s.add("Serialization", "data");
         s.add("Communication", "ManyToOne, Reliable, AutoUpcalls");
         
         portType = ibis.createPortType("Ring", s);
         
-        receive = portType.createReceivePort("Ring-" + ibis.identifier().name(), this);
+        receive = portType.createReceivePort("Ring-" + name + "-" + ibis.identifier().name(), this);
         receive.enableConnections();
         receive.enableUpcalls();
                               
         this.start();
     }
                        
+    
     private synchronized SendPort getSendPort(int id) {
         
         if (id == -1) { 
@@ -304,11 +305,11 @@ public class LableRoutingMulticast extends Thread implements Upcall {
     }
 
     public void done() {
-
+/*
         synchronized (this) {
             mustStop = true;
         }
-                
+*/                
         try {             
             receive.disableConnections();
 

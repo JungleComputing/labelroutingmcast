@@ -36,18 +36,18 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     
     private Inputstreams inputStreams = new Inputstreams();
                
-    public ObjectMulticaster(Ibis ibis) throws IOException, IbisException { 
-        this(ibis, false, false);
+    public ObjectMulticaster(Ibis ibis, String name) throws IOException, IbisException { 
+        this(ibis, false, false, name);
     }
     
-    public ObjectMulticaster(Ibis ibis, boolean changeOrder, boolean signal) 
+    public ObjectMulticaster(Ibis ibis, boolean changeOrder, boolean signal, String name) 
         throws IOException, IbisException {
                 
         this.signal = signal;
         
         cache = new MessageCache(1000);
                 
-        lrmc = new LableRoutingMulticast(ibis, this, cache, changeOrder);
+        lrmc = new LableRoutingMulticast(ibis, this, cache, changeOrder, name);
         
         os = new LRMCOutputStream(lrmc);
 

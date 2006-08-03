@@ -38,7 +38,7 @@ public class Test1 extends TestBase implements MessageReceiver {
     public void init() throws IOException, IbisException {
         cache = new MessageCache(cacheSize);        
         cache = new MessageCache(cacheSize);        
-        lrmcast = new LableRoutingMulticast(ibis, this, cache, autoSort);        
+        lrmcast = new LableRoutingMulticast(ibis, this, cache, autoSort, "test");        
     }
     
     private void start() throws IOException { 

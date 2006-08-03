@@ -73,7 +73,7 @@ public class Test5 extends TestBase {
     } 
     
     public void init() throws IOException, IbisException {
-        omc = new ObjectMulticaster(ibis);
+        omc = new ObjectMulticaster(ibis, "test");
     }
     
     public void addIbis(IbisIdentifier id) {

@@ -30,7 +30,7 @@ public class Test4 extends TestBase {
     } 
     
     public void init() throws IOException, IbisException {
-        omc = new ObjectMulticaster(ibis, false, signal);
+        omc = new ObjectMulticaster(ibis, false, signal, "test");
     }
     
     public void addIbis(IbisIdentifier id) {
