@@ -24,7 +24,9 @@ public class LableRoutingMulticast extends Thread implements Upcall {
     private final static int ZOMBIE_THRESHOLD = 10000;
 
     private final Ibis ibis;
-    private final PortType portType;
+    private final PortType portType;    
+    private final String name;
+    
     private ReceivePort receive; 
     
     private MessageReceiver receiver;
@@ -47,6 +49,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
    
     private long bytes = 0;
     
+    
     private BoundedObjectQueue sendQueue = new BoundedObjectQueue(64);
       
     public LableRoutingMulticast(Ibis ibis, MessageReceiver m, MessageCache c, String name) 
@@ -58,6 +61,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
             boolean changeOrder, String name) throws IOException, IbisException {
         this.ibis = ibis;    
         this.receiver = m;
+        this.name = name;
         this.cache = c;
         this.changeOrder = changeOrder;
 
@@ -122,24 +126,27 @@ public class LableRoutingMulticast extends Thread implements Upcall {
                 IbisIdentifier ibisID = (IbisIdentifier) ibisList.get(id); 
                 
                 if (ibisID != null) { 
-                    tmp = ibis.registry().lookupReceivePort("Ring-" 
-                            + ibisID.name(), 1000);
+                    tmp = ibis.registry().lookupReceivePort("Ring-" + name + "-" 
+                            + ibisID.name(), 10000);
                 } 
                 
                 if (tmp != null) {                 
-                    sp.connect(tmp, 1000);                
+                    sp.connect(tmp, 10000);                
                     sendports.put(id, sp);
                 } else { 
+                    System.err.println("Lookup of port " + 
+                            "Ring-" + name + "-"+ ibisID.name() + "failed!");
                     failed = true;
                 }
             } catch (IOException e) {
-                failed = true;
+                failed = true;                
+                e.printStackTrace(System.err);                
             } 
             
-            if (failed) {                 
+            if (failed) {
                 System.err.println("Failed to connect to " + id 
                         + " - informing nameserver!");
-                
+                                
                 // notify the nameserver that this machine may be dead...
                 try { 
                     if (tmp != null) { 
