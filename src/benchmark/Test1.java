@@ -113,10 +113,7 @@ public class Test1 extends TestBase implements MessageReceiver {
     public synchronized boolean gotMessage(Message b) { 
 
         receivedMessages++;
-        
-        System.out.println("Received message " + receivedMessages);
-        
-        
+                
         if (ring && receivedMessages == count) { 
             notifyAll();
         }
