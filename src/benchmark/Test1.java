@@ -37,7 +37,6 @@ public class Test1 extends TestBase implements MessageReceiver {
     
     public void init() throws IOException, IbisException {
         cache = new MessageCache(cacheSize);        
-        cache = new MessageCache(cacheSize);        
         lrmcast = new LableRoutingMulticast(ibis, this, cache, autoSort, "test");        
     }
     
@@ -58,6 +57,9 @@ public class Test1 extends TestBase implements MessageReceiver {
             // Wait for the master to leave (means the application is done)
             waitForMasterToLeave();            
         }
+        
+        System.out.println("Machine " + ibis.identifier() + " received " 
+                + receivedMessages + " messages");
         
         lrmcast.done();
 
