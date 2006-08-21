@@ -35,13 +35,17 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     private MessageCache cache; 
     
     private Inputstreams inputStreams = new Inputstreams();
-               
-    public ObjectMulticaster(Ibis ibis, String name) throws IOException, IbisException { 
+    
+    private boolean destinationSet = false;
+    
+    public ObjectMulticaster(Ibis ibis, String name) 
+        throws IOException, IbisException {
+        
         this(ibis, false, false, name);
     }
     
-    public ObjectMulticaster(Ibis ibis, boolean changeOrder, boolean signal, String name) 
-        throws IOException, IbisException {
+    public ObjectMulticaster(Ibis ibis, boolean changeOrder, boolean signal, 
+            String name) throws IOException, IbisException {
                 
         this.signal = signal;
         
@@ -60,6 +64,7 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
 
     public void setDestination(IbisIdentifier [] dest) { 
         lrmc.setDestination(dest);
+        destinationSet = true;
     }
     
     public void addIbis(IbisIdentifier id) { 
@@ -74,8 +79,9 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
         
         LRMCInputStream tmp = (LRMCInputStream) inputStreams.find(m.sender);
         
-        if (tmp == null) {            
-            if (signal) { 
+        if (tmp == null) {
+            // TODO performance bug for small messages -- fix   
+            if (signal) {                 
                 tmp = new LRMCInputStream(m.sender, cache, this);
             } else { 
                 tmp = new LRMCInputStream(m.sender, cache);
@@ -108,7 +114,29 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
         
         return bout.bytesWritten();
     }
-   
+    
+    public long send(Object o) throws IOException {
+
+        if (!destinationSet) { 
+            throw new IOException("No destination set!");
+        }
+        
+        // We only want to return the number of bytes written in this bcast, so 
+        // reset the count.
+        bout.resetBytesWritten();               
+        
+        os.reset();
+        
+        // write the object and reset the stream
+        sout.reset(true);              
+        sout.writeObject(o);
+        sout.flush();
+
+        totalData += bout.bytesWritten();
+        
+        return bout.bytesWritten();
+    }
+    
     private Object explicitReceive() throws IOException, ClassNotFoundException {
         
         Object result = null; 
