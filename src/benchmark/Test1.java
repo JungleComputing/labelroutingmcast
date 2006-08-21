@@ -114,6 +114,9 @@ public class Test1 extends TestBase implements MessageReceiver {
 
         receivedMessages++;
         
+        System.out.println("Received message " + receivedMessages);
+        
+        
         if (ring && receivedMessages == count) { 
             notifyAll();
         }
