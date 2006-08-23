@@ -37,10 +37,10 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     private Inputstreams inputStreams = new Inputstreams();
     
     private boolean destinationSet = false;
+    private IbisIdentifier [] destination = null; 
     
     public ObjectMulticaster(Ibis ibis, String name) 
-        throws IOException, IbisException {
-        
+        throws IOException, IbisException {       
         this(ibis, false, false, name);
     }
     
@@ -62,9 +62,8 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
         sin = SerializationBase.createSerializationInput("ibis", bin);
     }
 
-    public void setDestination(IbisIdentifier [] dest) { 
-        lrmc.setDestination(dest);
-        destinationSet = true;
+    public synchronized void setDestination(IbisIdentifier [] dest) {         
+        destination = dest;
     }
     
     public void addIbis(IbisIdentifier id) { 
@@ -97,30 +96,21 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     }
     
     public long send(IbisIdentifier [] id, Object o) throws IOException {
-        
-        // We only want to return the number of bytes written in this bcast, so 
-        // reset the count.
-        bout.resetBytesWritten();
-                
-        lrmc.setDestination(id);
-        os.reset();
-        
-        // write the object and reset the stream
-        sout.reset(true);              
-        sout.writeObject(o);
-        sout.flush();
-        
-        bout.forcedFlush();
-        
-        totalData += bout.bytesWritten();
-        
-        return bout.bytesWritten();
+        setDestination(id);
+        return send(o);
     }
     
-    public long send(Object o) throws IOException {
+    public synchronized long send(Object o) throws IOException {
 
-        if (!destinationSet) { 
-            throw new IOException("No destination set!");
+        // check if a new destination array is available....
+        synchronized (this) {
+            if (destination != null) {
+                lrmc.setDestination(destination);
+                destination = null;
+                destinationSet = true;            
+            } else if (!destinationSet) { 
+                throw new IOException("No destination set!");
+            }            
         }
         
         // We only want to return the number of bytes written in this bcast, so 
