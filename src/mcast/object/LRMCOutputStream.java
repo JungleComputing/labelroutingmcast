@@ -35,9 +35,7 @@ public class LRMCOutputStream extends OutputStream {
                    ") while closed!");
            return b;
        }
-        
-//       System.err.println("____ got write(" + currentID + ", byte[" + len + "])");
-        
+               
        if (firstPacket) {
            firstPacket = false;
            currentNUM = 0;
@@ -45,6 +43,9 @@ public class LRMCOutputStream extends OutputStream {
            currentNUM++;
        }
        
+      // System.err.println("____ got write(" + currentID + " " + currentNUM 
+       //       + ", byte[" + len + "] " + firstPacket + " " + lastPacket + ")");
+              
        if (lastPacket) { 
            mcast.send(currentID++, currentNUM|Message.LAST_PACKET, b, off, len);
        } else { 

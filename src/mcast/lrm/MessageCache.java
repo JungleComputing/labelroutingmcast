@@ -42,7 +42,8 @@ public class MessageCache {
             int id, int num, byte [] message, int off, int len, boolean local) { 
         
         if (size == 0) { 
-            return new Message(sender, destinations, id, num, message, off, len);
+            return new Message(sender, destinations, id, num, message, off, 
+                    len, local);
         } 
         
         Message tmp = cache;
@@ -58,6 +59,7 @@ public class MessageCache {
         tmp.off = off;
         tmp.len = len;
         tmp.local = local;
+        tmp.last = false;
         
         return tmp;        
     }
@@ -82,24 +84,7 @@ public class MessageCache {
         cache = cache.next;
         tmp.next = null;
         size--;
-                
+
         return tmp;        
     }
-    
-    /*
-    
-    public synchronized Message get() {
-        
-        if (size == 0) { 
-            return new Message();
-        } 
-        
-        Message tmp = cache;
-        cache = cache.next;
-        tmp.next = null;
-        size--;
-        
-        return tmp;
-    } 
-    */        
 }

@@ -53,11 +53,15 @@ public class LRMCInputStream extends InputStream {
     
     public void addMessage(Message m) { 
         
-        synchronized (this) { 
+        //System.err.println("Queued message " + m.id + "/" + m.num);
+        
+        synchronized (this) {
+            m.next = null;
+            
             if (head == null) { 
                 head = tail = m;
                 notifyAll();
-            } else {             
+            } else {                
                 tail.next = m;
                 tail = tail.next;
             }
@@ -90,6 +94,8 @@ public class LRMCInputStream extends InputStream {
         
         index = 0;
         
+        //System.err.println("Dequeued message " + current.id + "/" + current.num);
+        
   //      System.err.println("Extracted message " + current.id + "/" 
   //              + current.num + " " + current.len + " " + current.last);
     }
@@ -100,7 +106,7 @@ public class LRMCInputStream extends InputStream {
         if (currentID == 0) {
             // We must start a new series of packets here. Each series 
             // corresponds to a 'multi fragment' message.
-               
+                    
             while (current.num != 0) {
                 // Oh dear, we seem to have missed the start of a series of
                 // packets. We may have lost a message somewhere (which is 
@@ -115,7 +121,9 @@ public class LRMCInputStream extends InputStream {
                 freeMessage();
                 getMessage();
             } 
-                
+        
+            //System.err.println("Starting new series " + current.id);            
+                        
             currentID  = current.id;
             currentNum = 0;
     /*
@@ -162,6 +170,9 @@ public class LRMCInputStream extends InputStream {
     
     private synchronized void freeMessage() { 
         // Free the current message and updates the currentID if necessary
+
+        //System.err.println("Freed message " + current.id + "/" + current.num 
+        //        + " last = " + current.last);
         
         if (current.last) { 
             currentID  = 0;
@@ -179,9 +190,9 @@ public class LRMCInputStream extends InputStream {
     
     public int read(byte b[], int off, int len) throws IOException {
         
-        if (current == null || index == current.len) { 
+        if (current == null) {
             getMessage();
-        } 
+        }
         
         checkMessage();
                 
@@ -197,6 +208,11 @@ public class LRMCInputStream extends InputStream {
         } else {          
             System.arraycopy(current.buffer, index, b, off, len);
             index += len;
+            
+            if (index == current.len) { 
+                freeMessage();
+            }
+            
             return len;
         } 
     }

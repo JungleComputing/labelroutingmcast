@@ -109,7 +109,9 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
         sout.reset(true);              
         sout.writeObject(o);
         sout.flush();
-
+        
+        bout.forcedFlush();
+        
         totalData += bout.bytesWritten();
         
         return bout.bytesWritten();
@@ -132,6 +134,8 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
         sout.writeObject(o);
         sout.flush();
 
+        bout.forcedFlush();
+        
         totalData += bout.bytesWritten();
         
         return bout.bytesWritten();

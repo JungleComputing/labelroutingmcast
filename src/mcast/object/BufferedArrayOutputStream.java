@@ -76,7 +76,8 @@ public final class BufferedArrayOutputStream extends DataOutputStream {
 
         if (DEBUG) {
             System.err.println("flush(" + incr + ") : " + " "
-                    + (index + incr >= BUF_SIZE) + " " + (index) + ")");
+                    + (index + incr >= BUF_SIZE) + " " + (index) + " " + 
+                    forced + ")");
         }
 
         if (forced || index + incr > BUF_SIZE) {
@@ -336,14 +337,19 @@ public final class BufferedArrayOutputStream extends DataOutputStream {
         } while (len != 0);
     }
 
-    public void flush() throws IOException {
+    public void flush() throws IOException {                      
+        //System.err.println("_____ ignoring flush() ");
+    }
+
+    public void forcedFlush() throws IOException {
         
-        //System.err.println(" ____ forced flush()");
+        //System.err.println(" ____ forced flush() ");
+        //new Exception().printStackTrace(System.err);
         
         flush(BUF_SIZE + 1, true); /* Forces flush */
         out.flush();
-    }
-
+    }        
+    
     public void finish() {
         // empty
     }

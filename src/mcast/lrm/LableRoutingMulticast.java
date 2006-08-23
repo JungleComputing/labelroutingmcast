@@ -82,6 +82,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
     private synchronized SendPort getSendPort(int id) {
         
         if (id == -1) { 
+            System.err.println("Ignoring " + id);
             return null;
         }
                 
@@ -110,7 +111,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
                     System.err.println("Sender insists that " + id  
                             + " is still allive, so I'll try again!");
                 } else { 
-                    //System.err.println("Ignoring " + id + " since it's dead!");
+                    System.err.println("Ignoring " + id + " since it's dead!");
                     return null;
                 }                
             }
@@ -160,8 +161,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
                     // ignore
                 }
                 
-                System.err.println("Done informing nameserver");
-                                
+                System.err.println("Done informing nameserver");                                
                 return null;
             }
         }
@@ -171,7 +171,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
             
     private void internalSend(Message m) {
       
-        if (m.destinations == null || m.numDestinations == 0) { 
+        if (m.destinations == null || m.destinations.length == 0) { 
             return; 
         }
         
@@ -184,14 +184,18 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         do { 
             id = m.destinations[index++]; 
             sp = getSendPort(id); 
-        } while (sp == null && index < m.numDestinations);
+        } while (sp == null && index < m.destinations.length);
         
         if (sp == null) { 
             // No working destinations where found, so give up!
+            System.err.println("No working destinations found, giving up!");            
             return;
         }
         
-        // send the message to the target 
+        //System.err.println("Writing message " + m.id + "/" + m.num 
+        //        + " local " + m.local);
+        
+        // send the message to the target        
         try { 
             WriteMessage wm = sp.newMessage();
             m.write(wm, index);        
@@ -208,8 +212,11 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         if (!knownIbis.containsKey(ibis)) { 
             knownIbis.put(ibis, new Short(nextIbisID));            
             ibisList.put(nextIbisID, ibis);
-                        
-            if (ibis.equals(this.ibis.identifier())) { 
+            
+            System.err.println("Adding Ibis " + nextIbisID + " " + ibis);
+                                    
+            if (ibis.equals(this.ibis.identifier())) {                
+                System.err.println("I am " + nextIbisID + " " + ibis);
                 myID = nextIbisID;
             }
         
@@ -218,9 +225,11 @@ public class LableRoutingMulticast extends Thread implements Upcall {
     }
 
     public synchronized void removeIbis(IbisIdentifier ibis) {
+                
         Short tmp = (Short) knownIbis.remove(ibis);
         
-        if (tmp != null) { 
+        if (tmp != null) {
+            System.err.println("Removing ibis " + tmp.shortValue() + " " + ibis);
             ibisList.remove(tmp.shortValue());
         }
     }
@@ -263,24 +272,19 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         return tmp;
     }
     
-    public void send(int id, int num, byte [] message, int off, int len) {
-                
-        Message m = cache.get(myID, destinations, id, num,
-                message, off, len, false);              
+    public void send(int id, int num, byte [] message, int off, int len) {        
         
-        internalSend(m);
-    } 
-
-    public void send(Message m) {
-        
-        if (m.destinations == null) { 
-            m.destinations = destinations;
+        if (myID == -1) {
+            System.err.println("Cannot send packet: local ID isn't known!");
+            return;            
         }
         
-        m.sender = myID;
+        Message m = cache.get(myID, destinations, id, num, message, off, 
+                len, true);              
         
-        //sendQueue.enqueue(m);
-        internalSend(m);
+        //sendQueue.enqueue(m);        
+        internalSend(m);        
+        cache.put(m);
     } 
     
     public void run() { 

@@ -16,7 +16,6 @@ public class Message {
     public short sender;
     
     public short [] destinations;
-    public int numDestinations;
         
     public int id;
     public int num;
@@ -25,23 +24,23 @@ public class Message {
     public int off;    
     public int len;
     
-    public boolean last;
+    public boolean last = false;
     public boolean local;
     
     public Message next;
         
     //private int useCount = 0;
     
-    Message() { 
+    Message() {       
     }
        
     Message(int size, int destSize) { 
         buffer = new byte[size];
         destinations = new short[destSize];
-        numDestinations = destSize;
-    }
+            }
    
-    Message(short sender, short [] destinations, int id, int num, byte [] buffer, int off, int len) { 
+    Message(short sender, short [] destinations, int id, int num, 
+            byte [] buffer, int off, int len, boolean local) { 
         this.sender = sender;
         this.destinations = destinations;
         this.id = id;
@@ -49,7 +48,7 @@ public class Message {
         this.buffer = buffer;
         this.off = off;
         this.len = len;
-        numDestinations = destinations.length;
+        this.local = local;
     }   
            
     void read(ReadMessage rm, int len, int dst) throws IOException { 
@@ -70,12 +69,10 @@ public class Message {
         if (len > 0) { 
             rm.readArray(buffer, 0, len);
         } 
-
-        numDestinations = dst;
         
-        if (numDestinations > 0) {
+        if (dst > 0) {
             // TODO optimize!            
-            if (destinations == null || destinations.length < numDestinations) {
+            if (destinations == null || destinations.length < dst) {
                 destinations = new short[dst];
             } 
         
@@ -84,52 +81,10 @@ public class Message {
             destinations = null;
         }
     } 
-            
-    
-    /*
-    void read(ReadMessage rm) throws IOException { 
-
-        this.off = 0;
-                
-        len = rm.readInt();
-        numDestinations = rm.readInt();
-        
-        sender = rm.readString();        
-        id = rm.readInt();
-        num = rm.readInt();            
-        
-        last = ((num & LAST_PACKET) != 0);
-
-        if (last) { 
-            num &= ~LAST_PACKET; 
-        }
-        
-        if (len > 0) {
-            
-            if (buffer == null || buffer.length < len) {
-                buffer = new byte[len];
-            } 
-            
-            rm.readArray(buffer, 0, len);
-        } 
-
-        if (numDestinations > 0) {
-            if (destinations == null || destinations.length < numDestinations) {
-                destinations = new String[numDestinations];
-            } 
-        
-            for (int i=0;i<numDestinations;i++) { 
-                destinations[i] = rm.readString();
-            }
-        } else { 
-            destinations = null;
-        }
-    } 
-    */
     
     void write(WriteMessage wm, int fromDest) throws IOException { 
         
-        int destinationLength = numDestinations-fromDest; 
+        int destinationLength = destinations.length-fromDest; 
         
         // First write the two variable lengths present in the message.   
         wm.writeInt(len);                
