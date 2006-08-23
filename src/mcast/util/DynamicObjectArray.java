@@ -29,7 +29,7 @@ public class DynamicObjectArray {
     
     public void put(int index, Object o) { 
      
-        if (index > objects.length) { 
+        if (index >= objects.length) { 
             resize(index);
         }
         
