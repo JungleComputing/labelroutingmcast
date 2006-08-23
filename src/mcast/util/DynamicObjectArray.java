@@ -18,7 +18,7 @@ public class DynamicObjectArray {
         
         int newSize = objects.length;        
         
-        while (newSize < minimumSize) {
+        while (newSize <= minimumSize) {
             newSize *= 2; 
         }
         
