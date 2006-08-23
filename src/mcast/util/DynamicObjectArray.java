@@ -57,7 +57,7 @@ public class DynamicObjectArray {
     
     public Object get(int index) { 
         
-        if (index < 0 || index > objects.length) { 
+        if (index < 0 || index >= objects.length) { 
             return null;
         }
         
