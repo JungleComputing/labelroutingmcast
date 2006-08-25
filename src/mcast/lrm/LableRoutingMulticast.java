@@ -213,10 +213,10 @@ public class LableRoutingMulticast extends Thread implements Upcall {
             knownIbis.put(ibis, new Short(nextIbisID));            
             ibisList.put(nextIbisID, ibis);
             
-            System.err.println("Adding Ibis " + nextIbisID + " " + ibis);
+            // System.err.println("Adding Ibis " + nextIbisID + " " + ibis);
                                     
             if (ibis.equals(this.ibis.identifier())) {                
-                System.err.println("I am " + nextIbisID + " " + ibis);
+                // System.err.println("I am " + nextIbisID + " " + ibis);
                 myID = nextIbisID;
             }
         
