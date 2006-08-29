@@ -12,6 +12,8 @@ public class Inputstreams {
             
     public synchronized void add(LRMCInputStream is, short sender) {
         
+     //   System.err.println("Added sender " + sender);
+        
         if (sender > inputStreams.length) {             
             resize(sender);
         }

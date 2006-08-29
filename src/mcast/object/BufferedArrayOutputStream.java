@@ -36,7 +36,7 @@ public final class BufferedArrayOutputStream extends DataOutputStream {
     private LRMCOutputStream out;
 
     /** The buffer in which output data is collected. */
-    private byte[] buffer = new byte[BUF_SIZE];
+    private byte[] buffer;
 
     /** Size of the buffer in which output data is collected. */
     private int index = 0;
@@ -53,6 +53,7 @@ public final class BufferedArrayOutputStream extends DataOutputStream {
      */
     public BufferedArrayOutputStream(LRMCOutputStream out) {
         this.out = out;
+        this.buffer = out.getBuffer();
         conversion = Conversion.loadConversion(false);
     }
 
@@ -85,7 +86,7 @@ public final class BufferedArrayOutputStream extends DataOutputStream {
 
             // The write will return a new buffer for us which is (at least)
             // the same size as the old one. 
-            buffer = out.write(buffer, 0, index, forced);
+            buffer = out.write(0, index, forced);
             
             // Assume we lost the buffer here 
             index = 0;            

@@ -49,11 +49,11 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
                 
         this.signal = signal;
         
-        cache = new MessageCache(1000);
+        cache = new MessageCache(1500, 8*1024);
                 
         lrmc = new LableRoutingMulticast(ibis, this, cache, changeOrder, name);
         
-        os = new LRMCOutputStream(lrmc);
+        os = new LRMCOutputStream(lrmc, cache);
 
         bout = new BufferedArrayOutputStream(os);
         bin = new BufferedArrayInputStream(null);
@@ -79,7 +79,6 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
         LRMCInputStream tmp = (LRMCInputStream) inputStreams.find(m.sender);
         
         if (tmp == null) {
-            // TODO performance bug for small messages -- fix   
             if (signal) {                 
                 tmp = new LRMCInputStream(m.sender, cache, this);
             } else { 

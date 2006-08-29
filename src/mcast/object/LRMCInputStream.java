@@ -5,26 +5,26 @@ import java.io.InputStream;
 
 import mcast.lrm.Message;
 import mcast.lrm.MessageCache;
+import mcast.lrm.MessageQueue;
 
 //import mcast.lrm.ByteArrayCache;
 
 public class LRMCInputStream extends InputStream {
     
-    private short source;       
-    private ObjectReceiver receiver;
-        
+    private final short source;       
+
+    private final ObjectReceiver receiver;
+    
+    private final MessageQueue queue = new MessageQueue();
+    
     private Message current = null; 
     
     private int index = 0;
     
     private int currentID = 0;    
     private int currentNum = 0;    
-    
-    private long memoryUsage = 0; 
-    
-    private Message head;
-    private Message tail;
-   
+          
+    // private long memoryUsage = 0;     
 //    private int lowBound = 0;
 //    private int highBound = 1024*1024;
        
@@ -39,59 +39,38 @@ public class LRMCInputStream extends InputStream {
         
         this.source = source;
         this.cache = cache;
-        this.receiver = receiver;
+        this.receiver = receiver;        
     }
         
     public short getSource() { 
         return source;
     }
     
-    public synchronized boolean haveData() {  
-        return (head != null) || 
-            (current != null && index < current.len) ;
+    public boolean haveData() {        
+        // NOTE: only used when nobody reads from the stream anymore, so it's 
+        // not necessary to synchronize ...
+        return (current != null && index < current.len) || queue.size() > 0;
     }
     
     public void addMessage(Message m) { 
         
+        queue.enqueue(m);
+        
         //System.err.println("Queued message " + m.id + "/" + m.num);
         
-        synchronized (this) {
-            m.next = null;
-            
-            if (head == null) { 
-                head = tail = m;
-                notifyAll();
-            } else {                
-                tail.next = m;
-                tail = tail.next;
-            }
-        
-            // Note use real length here!
-            memoryUsage += m.buffer.length;
-        } 
+      //  synchronized (this) {
+            // Note: use real length here!
+      //      memoryUsage += m.buffer.length;
+      //  } 
         
         if (receiver != null && m.last) { 
             receiver.haveObject(this);
         }           
     }
            
-    private synchronized void getMessage() { 
-        
-        while (head == null) {
-            try { 
-                wait();
-            } catch (InterruptedException e) {
-                // ignore
-            }
-        }        
-        
-        current = head;
-        head = head.next;
-        
-        if (head == null) { 
-            tail = null;
-        }
-        
+    private void getMessage() { 
+
+        current = queue.dequeue();        
         index = 0;
         
         //System.err.println("Dequeued message " + current.id + "/" + current.num);
@@ -168,7 +147,7 @@ public class LRMCInputStream extends InputStream {
         } 
     }
     
-    private synchronized void freeMessage() { 
+    private void freeMessage() { 
         // Free the current message and updates the currentID if necessary
 
         //System.err.println("Freed message " + current.id + "/" + current.num 
@@ -182,7 +161,7 @@ public class LRMCInputStream extends InputStream {
         }
         
         // Note use real length here!
-        memoryUsage -= current.buffer.length;
+       // memoryUsage -= current.buffer.length;
 
         cache.put(current);        
         current = null;

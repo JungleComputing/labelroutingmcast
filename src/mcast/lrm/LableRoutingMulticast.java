@@ -15,7 +15,6 @@ import ibis.ipl.WriteMessage;
 import java.io.IOException;
 import java.util.HashMap;
 
-import mcast.util.BoundedObjectQueue;
 import mcast.util.DynamicObjectArray;
 import mcast.util.IbisSorter;
 
@@ -49,11 +48,10 @@ public class LableRoutingMulticast extends Thread implements Upcall {
    
     private long bytes = 0;
     
-    
-    private BoundedObjectQueue sendQueue = new BoundedObjectQueue(64);
+    private MessageQueue sendQueue = new MessageQueue(32);
       
-    public LableRoutingMulticast(Ibis ibis, MessageReceiver m, MessageCache c, String name) 
-        throws IOException, IbisException {
+    public LableRoutingMulticast(Ibis ibis, MessageReceiver m, MessageCache c, 
+            String name) throws IOException, IbisException {
         this(ibis, m, c, false, name);
     }
             
@@ -171,7 +169,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
             
     private void internalSend(Message m) {
       
-        if (m.destinations == null || m.destinations.length == 0) { 
+        if (m.destinationsUsed == 0) {  
             return; 
         }
         
@@ -184,7 +182,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         do { 
             id = m.destinations[index++]; 
             sp = getSendPort(id); 
-        } while (sp == null && index < m.destinations.length);
+        } while (sp == null && index < m.destinationsUsed);
         
         if (sp == null) { 
             // No working destinations where found, so give up!
@@ -271,20 +269,53 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         
         return tmp;
     }
-    
-    public void send(int id, int num, byte [] message, int off, int len) {        
+        
+    public boolean send(Message m) {
+        
+        short [] destOld = m.destinations;
+        
+        m.destinations = destinations;
+        m.destinationsUsed = destinations.length;        
+        m.sender = myID;
+        
+        internalSend(m);
+        
+        m.destinations = destOld;        
+        return true;        
+    }
+           
+    // Remove ? 
+    public boolean send(int id, int num, byte [] message, int off, int len) {        
         
         if (myID == -1) {
             System.err.println("Cannot send packet: local ID isn't known!");
-            return;            
+            return true;            
         }
         
-        Message m = cache.get(myID, destinations, id, num, message, off, 
-                len, true);              
+        Message m = cache.get(); 
         
+        byte [] tmp = m.buffer;
+        
+        m.sender = myID;
+        m.destinations = destinations; 
+        m.destinationsUsed = destinations.length;
+        m.id = id;
+        m.num = num;
+        m.buffer = message;
+        m.off = off;
+        m.len = len;
+        m.local = true;
+        m.last = false;
+                        
         //sendQueue.enqueue(m);        
-        internalSend(m);        
+        internalSend(m);
+        
+        // Restore the original buffer before putting the 
+        // message back in the cache... 
+        m.buffer = tmp;        
         cache.put(m);
+        
+        return true;
     } 
     
     public void run() { 
@@ -348,9 +379,8 @@ public class LableRoutingMulticast extends Thread implements Upcall {
             int len = rm.readInt();
             int dst = rm.readInt();
             
-            message = cache.get(len, dst);                        
+            message = cache.get(len);                        
             message.read(rm, len, dst);            
-            message.local = false;
 
             sendQueue.enqueue(message);
             
@@ -363,5 +393,9 @@ public class LableRoutingMulticast extends Thread implements Upcall {
                 cache.put(message);
             }
         }               
+    }
+
+    public int getPrefferedMessageSize() {
+        return cache.getPrefferedMessageSize();
     }
 }

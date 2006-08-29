@@ -16,7 +16,8 @@ public class Message {
     public short sender;
     
     public short [] destinations;
-        
+    public int destinationsUsed;
+           
     public int id;
     public int num;
 
@@ -31,14 +32,16 @@ public class Message {
         
     //private int useCount = 0;
     
-    Message() {       
+    public Message(int len) {
+        buffer = new byte[len];       
     }
        
-    Message(int size, int destSize) { 
-        buffer = new byte[size];
-        destinations = new short[destSize];
-            }
+    //Message(int size, int destSize) { 
+    //    buffer = new byte[size];
+    //    destinations = new short[destSize];
+   // }
    
+    /*
     Message(short sender, short [] destinations, int id, int num, 
             byte [] buffer, int off, int len, boolean local) { 
         this.sender = sender;
@@ -49,12 +52,14 @@ public class Message {
         this.off = off;
         this.len = len;
         this.local = local;
-    }   
+    } 
+    */  
            
     void read(ReadMessage rm, int len, int dst) throws IOException { 
 
         this.off = 0;
         this.len = len;
+        this.local = false;
         
         sender = rm.readShort();        
         id = rm.readInt();
@@ -69,22 +74,22 @@ public class Message {
         if (len > 0) { 
             rm.readArray(buffer, 0, len);
         } 
-        
+               
         if (dst > 0) {
             // TODO optimize!            
             if (destinations == null || destinations.length < dst) {
                 destinations = new short[dst];
             } 
         
-            rm.readArray(destinations, 0, dst);
-        } else { 
-            destinations = null;
-        }
+            rm.readArray(destinations, 0, dst);                       
+        } 
+        
+        destinationsUsed = dst;
     } 
     
     void write(WriteMessage wm, int fromDest) throws IOException { 
         
-        int destinationLength = destinations.length-fromDest; 
+        int destinationLength = destinationsUsed-fromDest; 
         
         // First write the two variable lengths present in the message.   
         wm.writeInt(len);                

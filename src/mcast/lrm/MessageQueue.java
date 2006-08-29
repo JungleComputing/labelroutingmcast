@@ -1,19 +1,30 @@
 package mcast.lrm;
 
-import java.util.LinkedList;
-
 public class MessageQueue {
 
-    private LinkedList queue = new LinkedList();    
-    private int limit;
+    private final int limit;
+    
+    private Message head; 
+    private Message tail; 
+    
+    private int size = 0;
+
+    public MessageQueue() { 
+        // no limit...
+        this(Integer.MAX_VALUE);
+    }
     
     public MessageQueue(int limit) { 
         this.limit = limit;
     }
     
+    public synchronized int size() { 
+        return size;
+    }
+    
     public synchronized void enqueue(Message m) { 
         
-        while (queue.size() >= limit) {            
+        while (size >= limit) {            
             try { 
                 wait();
             } catch (Exception e) {
@@ -21,27 +32,38 @@ public class MessageQueue {
             }
         }
         
-        queue.addLast(m);
-        
-        if (queue.size() == 1) { 
+        if (head == null) { 
+            head = tail = m;
+            m.next = null;
             notifyAll();
-        } 
+        } else { 
+            tail.next = m;
+            tail = m;            
+        }
+        
+        size++;
     }
     
     public synchronized Message dequeue() { 
 
-        while (queue.size() == 0) { 
+        while (size == 0) { 
             try { 
                 wait();
             } catch (Exception e) {
                 // TODO: handle exception
             }
         }
+                
+        Message tmp = head;         
+        head = head.next;
+        tmp.next = null;
         
-        if (queue.size() == limit) { 
+        size--;
+
+        if (size == limit-1) { 
             notifyAll();
-        } 
+        }
         
-        return (Message) queue.removeFirst();
+        return tmp;
     }
 }

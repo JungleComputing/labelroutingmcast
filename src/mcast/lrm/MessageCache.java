@@ -2,9 +2,9 @@ package mcast.lrm;
 
 public class MessageCache {
 
-    private final int MAX_MESSAGE_SIZE = 64*1024;
+    private final int MESSAGE_SIZE;
     private final int MAX_SIZE;
-    
+        
     private Message cache;
     private int size;
     
@@ -12,32 +12,32 @@ public class MessageCache {
    // private int lowBound = 0;
    // private int highBound = 1024*1024;
       
-    public MessageCache(int max) { 
-        this.MAX_SIZE = max;
+    private long hits = 0;
+    private long miss = 0;
+    
+    private long store = 0;    
+    private long discard = 0;
+    
+    public MessageCache(int cacheSize, int messageSize) { 
+        this.MAX_SIZE = cacheSize;
+        this.MESSAGE_SIZE = messageSize;
     }
     
-    public synchronized void put(Message m) { 
-        
-        // if (m.down() > 0) {
-            // message is still used somewhere!
-       //     return;
-       // }
-         
-        if (size < MAX_SIZE && m.buffer.length == MAX_MESSAGE_SIZE) {
+    public synchronized void put(Message m) {         
+        if (size < MAX_SIZE && 
+                m.buffer != null && m.buffer.length == MESSAGE_SIZE) {
+            
             m.next = cache;
             cache = m;
             size++;
-            
-            //System.err.println("Adding message to cache! " + size + " " + 
-            //        m.buffer.length);
+            store++;
         } else {      
-            //System.err.println("Dropping message from cache! " + size + " " + 
-            //        m.buffer.length);
-            
             m.next = null;
+            discard++;
         }        
     }
     
+    /*
     public synchronized Message get(short sender, short [] destinations, 
             int id, int num, byte [] message, int off, int len, boolean local) { 
         
@@ -52,7 +52,7 @@ public class MessageCache {
         size--;
         
         tmp.sender = sender;
-        tmp.destinations = destinations;
+        tmp.destinations = destinations; 
         tmp.id = id;
         tmp.num = num;
         tmp.buffer = message;
@@ -63,28 +63,51 @@ public class MessageCache {
         
         return tmp;        
     }
-    
-    public synchronized Message get(int len, int dst) { 
-        
-        if (size == 0 || len > MAX_MESSAGE_SIZE) { 
-            
-            if (len <= MAX_MESSAGE_SIZE) {
-        //        System.err.println("Creating new message of size " + 
-        //                MAX_MESSAGE_SIZE + " " + size);
-                return new Message(MAX_MESSAGE_SIZE, dst);
-            } else {
-                System.err.println("Creating new message of size " + 
-                        len + " " + size);
+     
+    public Message get(int len, int dst) { 
 
-                return new Message(len, dst);
-            }
+        Message m = get(len);
+        
+        if (m.destinations == null || m.destinations.length != dst) {
+            // TODO optimize!
+            m.destinations = new short[dst];
+        } 
+        
+        return m;
+    }
+    */
+   
+    
+    public Message get(int len) {
+        
+        if (len > MESSAGE_SIZE) { 
+            System.err.println("Creating new message of size " + len);
+            hits++;
+            return new Message(len);
         }
+                
+        return get();               
+    }
+
+    public synchronized Message get() {
+
+        if (size == 0) {
+            miss++;
+            return new Message(MESSAGE_SIZE);
+        }
+        
+        hits++;
         
         Message tmp = cache;
         cache = cache.next;
         tmp.next = null;
         size--;
 
-        return tmp;        
+        return tmp;               
+    }
+        
+    
+    public int getPrefferedMessageSize() {
+        return MESSAGE_SIZE;
     }
 }
