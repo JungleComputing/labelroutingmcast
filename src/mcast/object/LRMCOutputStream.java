@@ -3,8 +3,6 @@ package mcast.object;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import sun.awt.geom.AreaOp.CAGOp;
-
 import mcast.lrm.LableRoutingMulticast;
 import mcast.lrm.Message;
 import mcast.lrm.MessageCache;
