@@ -3,11 +3,18 @@
     default="build"
     basedir=".">
 
+    <property name="base" location="."/>
+
     <property name="srcdir" value="./src"/>
     <property name="builddir" value="./build"/>
     <property name="distdir" value="./jars"/>
 
-    <property name="external.classpath" value="external/bcel-5.1.jar:external/ibis.jar:external/ibis-util.jar:external/ibis-connect.jar:external/log4j-1.2.9.jar"/>
+    <path id="external.classpath">
+	<pathelement path="${base}/${builddir}"/>
+	<fileset dir="${base}/external">
+	    <include name="*.jar"/>
+	</fileset>
+    </path>
 
     <!-- Internal target - Preparations for building. -->
     <target name="prepare"> 
@@ -17,18 +24,19 @@
 
     <target name="compile" depends="prepare">
 	
-	<javac 	classpath="${external.classpath}"
-		destdir="${builddir}"
+	<javac  destdir="${builddir}"
                 srcdir="${srcdir}"
                 debug="true"
-                includes="**/*.java"/>
+		includes="**/*.java">
+		<classpath refid="external.classpath"/>
+	</javac>
 
 
-        <java   classpath="${external.classpath}:${builddir}"
-                classname="ibis.frontend.io.IOGenerator"
+        <java   classname="ibis.frontend.io.IOGenerator"
                 dir="${builddir}"
                 failonerror="true"
                 fork="true">
+		<classpath refid="external.classpath"/>
                 <arg value="-dir"/>
                 <arg line="benchmark.DoubleData"/>
         </java>
