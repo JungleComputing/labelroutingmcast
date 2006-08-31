@@ -8,6 +8,7 @@
     <property name="srcdir" value="./src"/>
     <property name="builddir" value="./build"/>
     <property name="distdir" value="./jars"/>
+    <property name="jar" value="${base}/${distdir}/lrmc-1.0.jar"/>
 
     <path id="external.classpath">
 	<pathelement path="${base}/${builddir}"/>
@@ -45,13 +46,13 @@
     <!-- Internal target - Builds the JAR file -->
     <target name="jar" depends="compile">
 
-	<delete failonerror="false" file="${distdir}/lrmc.jar" />
+	<delete failonerror="false" file="${jar}" />
 
         <!-- add the log4j configuration file -->
 <!--
         <copy   file="log4j.properties" todir="${builddir}" />
 -->
-	<jar 	jarfile="${distdir}/lrmc.jar"
+	<jar 	jarfile="${jar}"
                 basedir="${builddir}"
 		includes="**">
        		<manifest>
