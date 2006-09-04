@@ -73,6 +73,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         receive.enableConnections();
         receive.enableUpcalls();
                               
+        super.setName("LableRoutingMulticast:" + name);
         this.start();
     }
                        

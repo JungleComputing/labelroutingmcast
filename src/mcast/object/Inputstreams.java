@@ -56,12 +56,13 @@ public class Inputstreams {
     }
 
     public synchronized void hasData(LRMCInputStream is) {
+        if(hasData[is.getSource()] == true) {
+            System.err.println("InputStreams: hasData set to true twice!");
+        }
+
         hasData[is.getSource()] = true;
         streamsWithData++;
-
-        if (streamsWithData > 1) {
-            notifyAll();
-        }
+        notifyAll();
     }
 
     public synchronized LRMCInputStream getNextFilledStream() {
@@ -74,9 +75,7 @@ public class Inputstreams {
         }
 
         int size = inputStreams.length;
-
         for (int i = 0; i < size; i++) {
-
             if (hasData[(index + i) % size]) {
                 index = (index + i) % size;
                 hasData[index] = false;
