@@ -14,7 +14,7 @@ public class Inputstreams {
         
      //   System.err.println("Added sender " + sender);
         
-        if (sender > inputStreams.length) {             
+        if (sender >= inputStreams.length) {             
             resize(sender);
         }
         
@@ -25,7 +25,7 @@ public class Inputstreams {
         
         int newSize = hasData.length;        
         
-        while (newSize < minimumSize) {
+        while (newSize <= minimumSize) {
             newSize *= 2; 
         }
         
