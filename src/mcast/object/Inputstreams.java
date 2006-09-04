@@ -2,7 +2,7 @@ package mcast.object;
 
 public class Inputstreams {
 
-    private static final int DEFAULT_SIZE = 64;
+    private static final int DEFAULT_SIZE = 2;
 
     private LRMCInputStream[] inputStreams = new LRMCInputStream[DEFAULT_SIZE];
 
