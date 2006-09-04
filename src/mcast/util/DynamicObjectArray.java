@@ -2,7 +2,7 @@ package mcast.util;
 
 public class DynamicObjectArray {
 
-    private static final int DEFAULT_SIZE = 2;
+    private static final int DEFAULT_SIZE = 64;
 
     private Object[] objects;
 
