@@ -15,9 +15,6 @@ public class Inputstreams {
     private int last = -1;
     
     public synchronized void add(LRMCInputStream is, short sender) {
-        System.err.println("Added sender " + sender);
-        new Exception().printStackTrace();
-
         if (sender >= inputStreams.length) {
             resize(sender);
         }
@@ -46,8 +43,6 @@ public class Inputstreams {
 
     public synchronized LRMCInputStream find(short sender) {
         if(sender < 0 || sender > last) {
-            System.err.println("Illegal find in InputStreams");
-            new Exception().printStackTrace();
             return null;
         }
         

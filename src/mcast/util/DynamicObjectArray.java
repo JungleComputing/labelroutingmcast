@@ -29,10 +29,6 @@ public class DynamicObjectArray {
     }
 
     public void put(int index, Object o) {
-System.err.println("objArray: put " + index);
-new Exception().printStackTrace();
-
-        
         if (index >= objects.length) {
             resize(index);
         }
@@ -47,7 +43,6 @@ new Exception().printStackTrace();
     public void remove(int index) {
         if (index > last) {
             System.err.println("illegal remove in DynamicObjectArray");
-            new Exception().printStackTrace();
             return;
         }
 
@@ -62,8 +57,6 @@ new Exception().printStackTrace();
 
     public Object get(int index) {
         if (index < 0 || index > last) { 
-            System.err.println("illegal get in DynamicObjectArray");
-            new Exception().printStackTrace();
             return null;
         }
 
