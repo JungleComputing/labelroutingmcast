@@ -76,7 +76,7 @@ public class Inputstreams {
 
         final int size = inputStreams.length;
         
-        for (int i = 0; i < size; i++) {
+        for (int i=1;i<=size;i++) {
             if (hasData[(index + i) % size]) {
                 index = (index + i) % size;
                 hasData[index] = false;
