@@ -62,10 +62,14 @@ public class Inputstreams {
 
         hasData[is.getSource()] = true;
         streamsWithData++;
-        notifyAll();
+        
+        if (streamsWithData == 1) { 
+            notifyAll();
+        }
     }
 
     public synchronized LRMCInputStream getNextFilledStream() {
+        
         while (streamsWithData == 0) {
             try {
                 wait();
@@ -74,11 +78,13 @@ public class Inputstreams {
             }
         }
 
-        int size = inputStreams.length;
+        final int size = inputStreams.length;
+        
         for (int i = 0; i < size; i++) {
             if (hasData[(index + i) % size]) {
                 index = (index + i) % size;
                 hasData[index] = false;
+                break;
             }
         }
 
