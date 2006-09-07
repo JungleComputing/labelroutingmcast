@@ -35,7 +35,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
     private final DynamicObjectArray sendports = new DynamicObjectArray();    
     private final DynamicObjectArray diedmachines = new DynamicObjectArray();
     
-//    private boolean mustStop = false;    
+    private boolean mustStop = false;    
     private boolean changeOrder = false;    
     
     private short [] destinations = null;
@@ -167,12 +167,12 @@ public class LableRoutingMulticast extends Thread implements Upcall {
    
         return sp;
     }
-            
+
     private void internalSend(Message m) {
-      
         if (m.destinationsUsed == 0) {  
             return; 
         }
+
         
         // Get the next target from the destination array. If this fails, get 
         // the next one, etc. If no working destination is found we give up.  
@@ -180,29 +180,38 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         SendPort sp = null;
         short id = -1;
         
-        do { 
-            id = m.destinations[index++]; 
-            sp = getSendPort(id); 
-        } while (sp == null && index < m.destinationsUsed);
-        
-        if (sp == null) { 
-            // No working destinations where found, so give up!
-            System.err.println("No working destinations found, giving up!");            
-            return;
-        }
-        
-        //System.err.println("Writing message " + m.id + "/" + m.num 
-        //        + " local " + m.local);
-        
-        // send the message to the target        
-        try { 
-            WriteMessage wm = sp.newMessage();
-            m.write(wm, index);        
-            bytes += wm.finish();
-        } catch (IOException e) {
-            System.err.println("Write to " + id + " failed! " + e);
-            e.printStackTrace(System.err);
-            sendports.remove(id);            
+        // Made synchronized: sendports may be closed asynchronously by
+        // call to done(). (Ceriel)
+        synchronized(this) {
+            if (mustStop) {
+                // Sendports may be closed! (Ceriel)
+                return;
+            }
+            do { 
+                id = m.destinations[index++]; 
+                sp = getSendPort(id); 
+            } while (sp == null && index < m.destinationsUsed);
+            
+            if (sp == null) { 
+                // No working destinations where found, so give up!
+                System.err.println("No working destinations found, giving up!");            
+                return;
+            }
+            
+            //System.err.println("Writing message " + m.id + "/" + m.num 
+            //        + " local " + m.local);
+            
+
+            // send the message to the target        
+            try { 
+                WriteMessage wm = sp.newMessage();
+                m.write(wm, index);        
+                bytes += wm.finish();
+            } catch (IOException e) {
+                System.err.println("Write to " + id + " failed! " + e);
+                e.printStackTrace(System.err);
+                sendports.remove(id);            
+            }
         }
     } 
 
@@ -348,11 +357,9 @@ public class LableRoutingMulticast extends Thread implements Upcall {
     }
 
     public void done() {
-/*
         synchronized (this) {
             mustStop = true;
         }
-*/                
         try {             
             receive.disableConnections();
 
