@@ -75,7 +75,6 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         receive.enableUpcalls();
                               
         super.setName("LableRoutingMulticast:" + name);
-        this.setDaemon(true);
         this.start();
     }
                        
@@ -185,9 +184,10 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         return sp;
     }
 
-    private void internalSend(Message m) {
+    // Returns true if we should terminate.
+    private boolean internalSend(Message m) {
         if (m.destinationsUsed == 0) {  
-            return; 
+            return false; 
         }
 
         
@@ -202,7 +202,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         synchronized(this) {
             if (mustStop) {
                 // Sendports may be closed! (Ceriel)
-               return;
+               return true;
             }
             sending++;
         }
@@ -215,7 +215,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
             if (sp == null) { 
                 // No working destinations where found, so give up!
                 System.err.println("No working destinations found, giving up!");            
-                return;
+                return false;
             }
             
             //System.err.println("Writing message " + m.id + "/" + m.num 
@@ -233,11 +233,12 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         } finally {
             synchronized(this) {
                 sending--;
-                if (sending == 0 && mustStop) {
+                if (sending == 0 && sendQueue.size() == 0) {
                     notifyAll();
                 }
             }
         }
+        return false;
     } 
 
     public synchronized void addIbis(IbisIdentifier ibis) {
@@ -363,10 +364,16 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         
         while (!done) {   
 
-            Message m = (Message) sendQueue.dequeue();
+            Message m = (Message) sendQueue.dequeue(5000);
+            if (m == null) {
+                synchronized(this) {
+                    done = mustStop;
+                }
+                continue;
+            }
 
             try { 
-                internalSend(m);
+                done = internalSend(m);
             } catch (Exception e) {
                 System.err.println("Sender thread got exception! " + e);
                 e.printStackTrace(System.err);
@@ -387,14 +394,14 @@ public class LableRoutingMulticast extends Thread implements Upcall {
 
     public void done() {
         synchronized (this) {
-            mustStop = true;
-            while (sending != 0) {
+            while (sending != 0 || sendQueue.size() != 0) {
                 try {
                     wait();
                 } catch(Exception e) {
                     // ignored
                 }
             }
+            mustStop = true;
         }
         try {             
             receive.disableConnections();
@@ -426,6 +433,9 @@ public class LableRoutingMulticast extends Thread implements Upcall {
             message = cache.get(len);                        
             message.read(rm, len, dst);            
 
+            // Is this OK? sendQueue may block (is not allowed in upcall)!
+            // However, calling finish() here may change the message order,
+            // so we cannot do that. (Ceriel).
             sendQueue.enqueue(message);
             
         } catch (IOException e) {

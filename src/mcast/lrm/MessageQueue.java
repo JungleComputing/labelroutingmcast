@@ -24,6 +24,10 @@ public class MessageQueue {
     
     public synchronized void enqueue(Message m) { 
         
+        if (m.len == 0) {
+            System.out.println("Dangerous enqueue! len = 0");
+            (new Throwable()).printStackTrace();
+        }
         while (size >= limit) {            
             try { 
                 wait();
@@ -65,5 +69,21 @@ public class MessageQueue {
         }
         
         return tmp;
+    }
+
+    public synchronized Message dequeue(long millis) { 
+
+        if (size == 0) { 
+            try { 
+                wait(millis);
+            } catch (Exception e) {
+                // TODO: handle exception
+            }
+        }
+        if (size == 0) {
+            return null;
+        }
+
+        return dequeue();
     }
 }
