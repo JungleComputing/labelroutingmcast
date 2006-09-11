@@ -36,6 +36,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
     private final DynamicObjectArray diedmachines = new DynamicObjectArray();
     
     private boolean mustStop = false;    
+    private int sending = 0;    
     private boolean changeOrder = false;    
     
     private short [] destinations = null;
@@ -187,11 +188,14 @@ public class LableRoutingMulticast extends Thread implements Upcall {
                 // Sendports may be closed! (Ceriel)
                 return;
             }
-            do { 
-                id = m.destinations[index++]; 
-                sp = getSendPort(id); 
-            } while (sp == null && index < m.destinationsUsed);
-            
+            sending++;
+        }
+        do { 
+            id = m.destinations[index++]; 
+            sp = getSendPort(id); 
+        } while (sp == null && index < m.destinationsUsed);
+        
+        try {
             if (sp == null) { 
                 // No working destinations where found, so give up!
                 System.err.println("No working destinations found, giving up!");            
@@ -203,14 +207,19 @@ public class LableRoutingMulticast extends Thread implements Upcall {
             
 
             // send the message to the target        
-            try { 
-                WriteMessage wm = sp.newMessage();
-                m.write(wm, index);        
-                bytes += wm.finish();
-            } catch (IOException e) {
-                System.err.println("Write to " + id + " failed! " + e);
-                e.printStackTrace(System.err);
-                sendports.remove(id);            
+            WriteMessage wm = sp.newMessage();
+            m.write(wm, index);        
+            bytes += wm.finish();
+        } catch (IOException e) {
+            System.err.println("Write to " + id + " failed! " + e);
+            e.printStackTrace(System.err);
+            sendports.remove(id);            
+        } finally {
+            synchronized(this) {
+                sending--;
+                if (sending == 0 && mustStop) {
+                    notifyAll();
+                }
             }
         }
     } 
@@ -359,6 +368,13 @@ public class LableRoutingMulticast extends Thread implements Upcall {
     public void done() {
         synchronized (this) {
             mustStop = true;
+            while (sending != 0) {
+                try {
+                    wait();
+                } catch(Exception e) {
+                    // ignored
+                }
+            }
         }
         try {             
             receive.disableConnections();
