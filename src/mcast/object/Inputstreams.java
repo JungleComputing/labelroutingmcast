@@ -57,6 +57,7 @@ public class Inputstreams {
 
     public synchronized void hasData(LRMCInputStream is) {
         if (! hasData[is.getSource()]) {
+            // Fix: Test before setting and incrementing counter (Ceriel)
             hasData[is.getSource()] = true;
             // System.out.println("hasData " + is.getSource());
             streamsWithData++;
