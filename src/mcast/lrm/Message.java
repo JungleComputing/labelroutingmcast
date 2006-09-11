@@ -26,7 +26,7 @@ public class Message {
     public int len;
     
     public boolean last = false;
-    public boolean local;
+    public boolean local = false;
     
     public Message next;
         

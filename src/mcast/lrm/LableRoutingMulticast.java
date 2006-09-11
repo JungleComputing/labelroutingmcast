@@ -75,6 +75,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         receive.enableUpcalls();
                               
         super.setName("LableRoutingMulticast:" + name);
+        this.setDaemon(true);
         this.start();
     }
                        
@@ -125,6 +126,18 @@ public class LableRoutingMulticast extends Thread implements Upcall {
                 sp = portType.createSendPort();         
                 
                 IbisIdentifier ibisID = (IbisIdentifier) ibisList.get(id); 
+
+                if (ibisID == null) {
+                    synchronized(this) {
+                        try {
+                            wait(10000);
+                        } catch(Exception e) {
+                            // ignored
+                        }
+                    }
+                }
+
+                ibisID = (IbisIdentifier) ibisList.get(id); 
                 
                 if (ibisID != null) { 
                     tmp = ibis.registry().lookupReceivePort("Ring-" + name + "-" 
@@ -134,9 +147,12 @@ public class LableRoutingMulticast extends Thread implements Upcall {
                 if (tmp != null) {                 
                     sp.connect(tmp, 10000);                
                     sendports.put(id, sp);
-                } else { 
+                } else if (ibisID != null) {
                     System.err.println("Lookup of port " + 
                             "Ring-" + name + "-"+ ibisID.name() + "failed!");
+                    failed = true;
+                } else {
+                    System.err.println("No Ibis yet at position " + id);
                     failed = true;
                 }
             } catch (IOException e) {
@@ -238,6 +254,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
             }
         
             nextIbisID++;
+            notifyAll();
         }        
     }
 
@@ -298,6 +315,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         m.destinations = destinations;
         m.destinationsUsed = destinations.length;        
         m.sender = myID;
+        m.local = true;
         
         internalSend(m);
         
@@ -346,7 +364,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         while (!done) {   
 
             Message m = (Message) sendQueue.dequeue();
-            
+
             try { 
                 internalSend(m);
             } catch (Exception e) {

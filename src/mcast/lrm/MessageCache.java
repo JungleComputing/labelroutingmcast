@@ -101,6 +101,7 @@ public class MessageCache {
         Message tmp = cache;
         cache = cache.next;
         tmp.next = null;
+        tmp.local = false;
         size--;
 
         return tmp;               
