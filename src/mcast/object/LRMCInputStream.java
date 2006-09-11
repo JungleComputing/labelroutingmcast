@@ -67,7 +67,7 @@ public class LRMCInputStream extends InputStream {
             receiver.haveObject(this);
         }           
     }
-           
+
     private void getMessage() { 
 
         current = queue.dequeue();        

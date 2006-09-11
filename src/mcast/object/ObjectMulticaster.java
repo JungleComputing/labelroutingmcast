@@ -88,9 +88,11 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
             inputStreams.add(tmp, m.sender);
         } 
           
-        tmp.addMessage(m);         
-        inputStreams.hasData(tmp);
-        
+        // tmp.addMessage(m);         
+        // inputStreams.hasData(tmp);
+        // Fix: avoid race: message may have been read before setting
+        // hasData. (Ceriel)
+        inputStreams.hasData(tmp, m);
         return false;
     }
     
