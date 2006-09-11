@@ -43,7 +43,28 @@ public class IbisSorter implements Comparator {
         
         Arrays.sort(ids, from, to, tmp);
     }
-
+    
+    // Returns the index of the first character that is different in the two 
+    // Strings. Thus, the higher the number returned, the longer the prefix that 
+    // the two Strings share.  
+    private static int firstDifference(String s1, String s2) { 
+        
+        // first, make sure that we s1 is the shortest string. 
+        if (s1.length() > s2.length()) { 
+            String tmp = s1; 
+            s1 = s2; 
+            s2 = tmp;
+        }
+        
+        for (int i=0;i<s1.length();i++) { 
+            if (s1.charAt(i) != s2.charAt(i)) { 
+                return i;
+            }
+        }
+        
+        return s1.length();
+    }
+        
     public int compare(Object o1, Object o2) {
 
         IbisIdentifier id1 = (IbisIdentifier) o1;
@@ -67,14 +88,26 @@ public class IbisSorter implements Comparator {
             
             if (preferredName == null) { 
                 return id1.name().compareTo(id2.name());
-            } else {                 
-                int d1 = LevenshteinDistance.distance(preferredName, id1.name());
-                int d2 = LevenshteinDistance.distance(preferredName, id2.name());
+            } else {
+                // Figure out if one of the two strings has a longer prefix 
+                // in common with 'preferredName'. Note that this will result 
+                // in the lenght of the string only if the IbisIdentifier 
+                // actually contains the 'preferredName'. Therefore, this 
+                // IbisIdentifier will end up at the first position of the 
+                // array, which is exactly what we want.  
+                int d1 = firstDifference(preferredName, id1.name());
+                int d2 = firstDifference(preferredName, id2.name());
                 
-                if (d1 <= d2) { 
-                    return -1;
-                } else { 
+                // If both have the same distance, we sort them alphabetically.
+                // Otherwise, we prefer the one that is closest to 
+                // 'preferredName', since these may actually be located on the 
+                // same machine.  
+                if (d1 == d2) { 
+                    return id1.name().compareTo(id2.name());
+                } else if (d1 <= d2) { 
                     return 1;
+                } else { 
+                    return -1;
                 } 
             }
         } 

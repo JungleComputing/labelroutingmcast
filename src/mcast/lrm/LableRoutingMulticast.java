@@ -186,7 +186,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         synchronized(this) {
             if (mustStop) {
                 // Sendports may be closed! (Ceriel)
-                return;
+               return;
             }
             sending++;
         }
