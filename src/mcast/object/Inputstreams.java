@@ -56,11 +56,14 @@ public class Inputstreams {
     }
 
     public synchronized void hasData(LRMCInputStream is) {
-        hasData[is.getSource()] = true;
-        streamsWithData++;
+        if (! hasData[is.getSource()]) {
+            hasData[is.getSource()] = true;
+            // System.out.println("hasData " + is.getSource());
+            streamsWithData++;
         
-        if (streamsWithData == 1) { 
-            notifyAll();
+            if (streamsWithData == 1) { 
+                notifyAll();
+            }
         }
     }
 
@@ -85,6 +88,8 @@ public class Inputstreams {
         }
 
         streamsWithData--;
+
+        // System.out.println("nextFilled " + inputStreams[index].getSource());
 
         return inputStreams[index];
     }

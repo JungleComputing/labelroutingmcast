@@ -56,7 +56,7 @@ public class LRMCInputStream extends InputStream {
         
         queue.enqueue(m);
         
-        //System.err.println("Queued message " + m.id + "/" + m.num);
+        // System.err.println("Queued message " + m.id + "/" + m.num + "(" + m.len + ")");
         
       //  synchronized (this) {
             // Note: use real length here!
@@ -73,7 +73,7 @@ public class LRMCInputStream extends InputStream {
         current = queue.dequeue();        
         index = 0;
         
-        //System.err.println("Dequeued message " + current.id + "/" + current.num);
+        // System.err.println("Dequeued message " + current.id + "/" + current.num + "(" + current.len + ")");
         
   //      System.err.println("Extracted message " + current.id + "/" 
   //              + current.num + " " + current.len + " " + current.last);
@@ -187,11 +187,6 @@ public class LRMCInputStream extends InputStream {
         } else {          
             System.arraycopy(current.buffer, index, b, off, len);
             index += len;
-            
-            if (index == current.len) { 
-                freeMessage();
-            }
-            
             return len;
         } 
     }
