@@ -31,6 +31,8 @@ public class Test1 extends TestBase implements MessageReceiver {
         
     private MessageCache cache;
     
+    private byte [] data;
+        
     private Test1() throws IbisException, IOException, ClassNotFoundException {      
         super();
     } 
@@ -49,7 +51,9 @@ public class Test1 extends TestBase implements MessageReceiver {
             waitForEnoughMachines();
             
             System.err.println("Starting test");
-            
+    
+            data = new byte[size];
+                       
             for (int i=0;i<repeat;i++) {                 
                 runTest();
             } 
@@ -68,18 +72,17 @@ public class Test1 extends TestBase implements MessageReceiver {
             
     private void runTest() { 
 
-        IbisIdentifier [] ids = getParticipants();
+        IbisIdentifier [] ids = getParticipants(true);
                
         receivedMessages = 0;
-        
-        byte [] data = new byte[size];
-        
-        System.out.println("Running test with " + ids.length + " machines.");        
-        
+    
+        if (ids != null) {         
+            System.out.println("Running test with " + ids.length + " machines.");        
+            lrmcast.setDestination(ids);
+        } 
+            
         long start = System.currentTimeMillis();
-        
-        lrmcast.setDestination(ids);
-        
+
         for (int i=0;i<count;i++) { 
             lrmcast.send(0, 0, data, 0, data.length);
         }     

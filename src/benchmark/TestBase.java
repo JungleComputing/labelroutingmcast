@@ -89,7 +89,7 @@ public abstract class TestBase implements ResizeHandler {
         ibis.end();
     }
     
-    protected synchronized IbisIdentifier [] getParticipants() {     
+    protected synchronized IbisIdentifier [] getParticipants(boolean onlyIfChanged) {     
         
         if (destinations == null || participantsChanged) {
             
@@ -142,6 +142,11 @@ public abstract class TestBase implements ResizeHandler {
                 }
             }
         } 
+        
+        if (onlyIfChanged && !participantsChanged) {
+            // nothing has changed.
+            return null;
+        }
         
         participantsChanged = false;          
         return destinations;
@@ -262,7 +267,9 @@ public abstract class TestBase implements ResizeHandler {
             } else if (args[i].equals("-signal")) {
                 signal = true;   
                 args[i] = null;
-            }               
+            } else { 
+                System.err.println("Unknown option " + args[i]);
+            }
         }
             
         if (ring && autoSort) { 

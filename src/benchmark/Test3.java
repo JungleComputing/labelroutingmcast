@@ -67,22 +67,18 @@ public class Test3 extends TestBase {
                
     private void runSender() throws IOException, ClassNotFoundException { 
 
-        IbisIdentifier [] ids = getParticipants();
-                
+        IbisIdentifier [] ids = getParticipants(false);
+        
         System.err.println("Running test with " + ids.length + " machines.");
         
         for (int i=0;i<ids.length;i++) { 
             System.err.println("   " + ids[i]);                            
         }
-                
+                           
         long start = System.currentTimeMillis();
         
         for (int i=0;i<count;i++) { 
             omc.send(ids, data);
-            
-            if (ring) { 
-                omc.receive();
-            }
         } 
         
         long end = System.currentTimeMillis();

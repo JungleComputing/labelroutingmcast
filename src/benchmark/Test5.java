@@ -103,7 +103,7 @@ public class Test5 extends TestBase {
         } 
                 
         // Tell eveyone that I'm done
-        omc.send(getParticipants(), null);
+        omc.send(getParticipants(false), null);
         
         waitForOthersToQuit();
       
@@ -140,20 +140,24 @@ public class Test5 extends TestBase {
 
         long size = 0;
                 
-        IbisIdentifier [] ids = getParticipants();
+        IbisIdentifier [] ids = getParticipants(true);
                 
-        System.err.println("Multicasting to " + ids.length + " machines.");
+        if (ids != null) {         
+            System.err.println("Multicasting to " + ids.length + " machines.");
         
-        if (verbose) { 
-            for (int i=0;i<ids.length;i++) { 
-                System.err.println("   " + ids[i]);                            
+            if (verbose) { 
+                for (int i=0;i<ids.length;i++) { 
+                    System.err.println("   " + ids[i]);                            
+                }
             }
+            
+            omc.setDestination(ids);
         } 
-        
+                        
         long start = System.currentTimeMillis();
                      
         for (int i=0;i<count;i++) { 
-            size += omc.send(ids, data);
+            size += omc.send(data);
         } 
         
         long end = System.currentTimeMillis();

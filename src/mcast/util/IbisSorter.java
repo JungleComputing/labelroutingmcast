@@ -37,7 +37,8 @@ public class IbisSorter implements Comparator {
     
         IbisSorter tmp = sorter;
         
-        if (!local.cluster().equals(sorter.preferredCluster)) { 
+        if (!local.name().equals(sorter.preferredName) ||
+                !local.cluster().equals(sorter.preferredCluster)) {            
             tmp = new IbisSorter(local.cluster(), local.name());
         }
         

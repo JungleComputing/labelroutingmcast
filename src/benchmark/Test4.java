@@ -9,8 +9,8 @@ import ibis.ipl.*;
 /**
  * 
  * In this test a single sender sends an object in a chain using the 
- * ObjectMulticaster. The test waits until the specified number of machines is 
- * reached. It can handle machines joining/leaving and crashing (except for a 
+ * ObjectMulticaster. The test waits at least one machine has joined 
+ * It can handle machines joining/leaving and crashing (except for a 
  * crash of the master). It does not send to itself.      
  *  
  * @author Jason Maassen
@@ -71,7 +71,7 @@ public class Test4 extends TestBase {
 
         long size = 0;
         
-        IbisIdentifier [] ids = getParticipants();
+        IbisIdentifier [] ids = getParticipants(false);
         
         while (ids.length == 0) {
             
@@ -83,22 +83,23 @@ public class Test4 extends TestBase {
                 // TODO: handle exception
             }
             
-            ids = getParticipants();            
+            ids = getParticipants(false);            
         }
 
         System.err.println("Multicasting to " + ids.length + " machines.");
-        
-        
+                
         if (verbose) { 
             for (int i=0;i<ids.length;i++) { 
                 System.err.println("   " + ids[i]);                            
             }
         } 
         
+        omc.setDestination(ids);
+        
         long start = System.currentTimeMillis();
         
         for (int i=0;i<count;i++) { 
-            size += omc.send(ids, data);
+            size += omc.send(data);
         } 
         
         long end = System.currentTimeMillis();

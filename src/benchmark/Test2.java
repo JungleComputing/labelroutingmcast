@@ -9,10 +9,10 @@ import mcast.object.ObjectMulticaster;
 
 /**
  * 
- * This test sends a single sender sends an object using the ObjectMulticaster. 
+ * This test sends a single sender sends a byte [] using the ObjectMulticaster. 
  * The test waits until the specified number of machines is reached. It can only 
- * handle machines joining at the start, but not leaving/crashing. It inserts
- * itself as the last destination, and waits for the data to return.     
+ * handle machines joining at the start, but not leaving/crashing. It optionally 
+ * inserts itself as the last destination, and waits for the data to return.     
  *  
  * @author Jason Maassen
  * @version 1.0 May 9, 2006
@@ -22,6 +22,8 @@ public class Test2 extends TestBase {
        
     private ObjectMulticaster omc;
     
+    private byte [] data;
+        
     private Test2() throws IbisException, IOException, ClassNotFoundException {         
         super();
     } 
@@ -48,6 +50,8 @@ public class Test2 extends TestBase {
             
             System.err.println("Starting test");
             
+            data = new byte[size];            
+            
             for (int i=0;i<repeat;i++) {                 
                 runTest();
             } 
@@ -65,20 +69,23 @@ public class Test2 extends TestBase {
            
     private void runTest() throws IOException, ClassNotFoundException { 
 
-        IbisIdentifier [] ids = getParticipants();
+        IbisIdentifier [] ids = getParticipants(true);
         
-        byte [] data = new byte[size];
-        
-        System.err.println("Running test with " + ids.length + " machines.");
-        
-        for (int i=0;i<ids.length;i++) { 
-            System.err.println("   " + ids[i]);                            
+        if (ids != null) {         
+            System.err.println("Running test with " + ids.length + " machines.");
+
+            for (int i=0;i<ids.length;i++) { 
+                System.err.println("   " + ids[i]);                            
+            }
+                
+            omc.setDestination(ids);
         }
+            
                 
         long start = System.currentTimeMillis();
         
         for (int i=0;i<count;i++) { 
-            omc.send(ids, data);
+            omc.send(data);
 
             if (ring) { 
                 omc.receive();

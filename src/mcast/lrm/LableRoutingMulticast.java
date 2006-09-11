@@ -267,14 +267,16 @@ public class LableRoutingMulticast extends Thread implements Upcall {
 
         if (changeOrder) { 
             // We are allowed to change the order of machines in the destination
-            // array. This can be used to make the mcast 'cluster aware'.            
+            // array. This can be used to make the mcast 'cluster aware'.  
             IbisSorter.sort(ibis.identifier(), destinations);                     
         }
         
         this.destinations = new short[destinations.length];
         
         for (int i=0;i<destinations.length;i++) { 
-            this.destinations[i] = getIbisID(destinations[i]);
+            this.destinations[i] = getIbisID(destinations[i]);            
+            //System.err.println("  " + i + " (" + destinations[i].name() + " at " 
+            //        + destinations[i].cluster() + ") -> " + this.destinations[i]);
         }
     }
     

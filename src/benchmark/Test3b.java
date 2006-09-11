@@ -67,15 +67,18 @@ public class Test3b extends TestBase {
                
     private void runSender() throws IOException, ClassNotFoundException { 
 
-        IbisIdentifier [] ids = getParticipants();
-                
-        System.err.println("Running test with " + ids.length + " machines.");
+        IbisIdentifier [] ids = getParticipants(true);
+
+        if (ids != null) { 
         
-        for (int i=0;i<ids.length;i++) { 
-            System.err.println("   " + ids[i]);                            
-        }
-                
-        omc.setDestination(ids);
+            omc.setDestination(ids);
+           
+            System.err.println("Running test with " + ids.length + " machines.");
+
+            for (int i=0;i<ids.length;i++) { 
+                System.err.println("   " + ids[i]);                            
+            }
+        } 
         
         long start = System.currentTimeMillis();
         
