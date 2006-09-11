@@ -101,12 +101,12 @@ public class Test5 extends TestBase {
         for (int i=0;i<repeat;i++) {
             runSender();
         } 
-                
+
         // Tell eveyone that I'm done
         omc.send(getParticipants(false), null);
         
         waitForOthersToQuit();
-      
+
         long end = System.currentTimeMillis();
         
         long total = omc.totalBytes();        
@@ -121,7 +121,11 @@ public class Test5 extends TestBase {
     
     private synchronized void waitForOthersToQuit() {
 
-        while (machinesDone < participants.size()-1) { 
+        // while (machinesDone < participants.size() - 1) { 
+        // Fix: participants.size() is a moving target, because ibis
+        // instances may leave, and in fact the leave upcall may arrive
+        // sooner than the multicast it sent before leaving. (Ceriel)
+        while (machinesDone < Math.max(participants.size(), minMachines)-1) { 
             try { 
                 wait();
             } catch (Exception e) { 
@@ -133,7 +137,7 @@ public class Test5 extends TestBase {
     private synchronized boolean machineDone() {        
         machinesDone++;        
         notifyAll();
-        return (machinesDone == participants.size()-1);
+        return machinesDone >= Math.max(participants.size(), minMachines)-1;
     }
            
     private void runSender() throws IOException, ClassNotFoundException { 
