@@ -33,6 +33,9 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     private long totalData = 0;
     
     private MessageCache cache; 
+
+    private boolean reading = false;
+    private boolean finish = false;
     
     private Inputstreams inputStreams = new Inputstreams();
     
@@ -135,10 +138,16 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
         Object result = null; 
         IOException ioe = null;
         ClassNotFoundException cnfe = null;
-        
+
         // Get the next stream that has some data
         LRMCInputStream stream = inputStreams.getNextFilledStream(); 
-        
+
+        synchronized(this) {
+            if (finish) {
+                return null;
+            }
+            reading = true;
+        }
         // Plug it into the deserializer
         bin.setInputStream(stream);
         bin.resetBytesRead();
@@ -146,26 +155,18 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
         // Read an object
         try { 
             result = sin.readObject();
-        } catch (IOException e1) {
-            ioe = e1;
-        } catch (ClassNotFoundException e2) {
-            cnfe = e2;
+        } finally {
+            inputStreams.returnStream(stream);
+            totalData += bin.bytesRead();
         }
-        
-        // Return the stream to the queue (if necessary) 
-        inputStreams.returnStream(stream);
-     
-        totalData += bin.bytesRead();
-                
-        // return the 'result' (exception or otherwise...)
-        if (ioe != null) { 
-            throw ioe;
-        }        
-        
-        if (cnfe != null) { 
-            throw cnfe;
-        }                        
-        
+
+        synchronized(this) {
+            reading = false;
+            if (finish) {
+                notifyAll();
+            }
+        }
+
         return result;
     }
     
@@ -203,6 +204,16 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     }
     
     public void done() {
+        synchronized(this) {
+            finish = true;
+            while (reading) {
+                try {
+                    wait();
+                } catch(Exception e) {
+                    // ignored
+                }
+            }
+        }
         try {
             os.close();
             
@@ -219,7 +230,12 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
 
         Object result = null; 
         boolean succes = true;
-        
+
+        if (finish) {
+            return;
+        }
+        reading = true;
+            
         // Plug it into the deserializer
         bin.setInputStream(stream);
         bin.resetBytesRead();
@@ -239,5 +255,7 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
             objects.addLast(result);
             notifyAll();
         }       
+
+        reading = false;
     }    
 }
