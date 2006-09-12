@@ -75,19 +75,17 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     }    
         
     public boolean gotMessage(Message m) {
-        
-        LRMCInputStream tmp = (LRMCInputStream) inputStreams.find(m.sender);
-        
-        if (tmp == null) {
-            if (signal) {                 
-                tmp = new LRMCInputStream(m.sender, cache, this);
-            } else { 
-                tmp = new LRMCInputStream(m.sender, cache);
-            }
-            
-            inputStreams.add(tmp, m.sender);
-        } 
-          
+
+        LRMCInputStream tmp;
+
+        // Fix: combined find call and add call into get().
+        // There was a race here. (Ceriel)
+        if (signal) {
+            tmp = inputStreams.get(m.sender, cache, this);
+        } else {
+            tmp = inputStreams.get(m.sender, cache, null);
+        }
+
         // tmp.addMessage(m);         
         // inputStreams.hasData(tmp);
         // Fix: avoid race: message may have been read before setting

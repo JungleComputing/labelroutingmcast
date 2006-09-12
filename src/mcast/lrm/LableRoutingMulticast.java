@@ -417,7 +417,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
             }
             
             receive.close(1000);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             // ignore, we tried...
         }
     }

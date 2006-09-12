@@ -1,6 +1,7 @@
 package mcast.object;
 
 import mcast.lrm.Message;
+import mcast.lrm.MessageCache;
 
 public class Inputstreams {
 
@@ -18,7 +19,7 @@ public class Inputstreams {
 
     private int last = -1;
     
-    public synchronized void add(LRMCInputStream is, short sender) {
+    private void add(LRMCInputStream is, short sender) {
         if (sender >= inputStreams.length) {
             resize(sender);
         }
@@ -49,7 +50,17 @@ public class Inputstreams {
         busy = tmp2;
     }
 
-    public synchronized LRMCInputStream find(short sender) {
+    public synchronized LRMCInputStream get(short sender, MessageCache cache,
+            ObjectMulticaster om) {
+        LRMCInputStream tmp = find(sender);
+        if (tmp == null) {
+            tmp = new LRMCInputStream(sender, cache, om);
+            add(tmp, sender);
+        }
+        return tmp;
+    }
+
+    private LRMCInputStream find(short sender) {
         if(sender < 0 || sender > last) {
             return null;
         }
