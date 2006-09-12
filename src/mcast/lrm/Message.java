@@ -5,7 +5,6 @@ package mcast.lrm;
 
 import java.io.IOException;
 
-
 import ibis.ipl.ReadMessage;
 import ibis.ipl.WriteMessage;
 
@@ -70,11 +69,11 @@ public class Message {
         if (last) { 
             num &= ~LAST_PACKET; 
         }
-        
+
         if (len > 0) { 
             rm.readArray(buffer, 0, len);
         } 
-               
+
         if (dst > 0) {
             // TODO optimize!            
             if (destinations == null || destinations.length < dst) {
@@ -98,7 +97,7 @@ public class Message {
         // Then write the content that guaranteed to be there        
         wm.writeShort(sender);
         wm.writeInt(id);
-        
+
         if (last) { 
             wm.writeInt(num | Message.LAST_PACKET);
         } else { 

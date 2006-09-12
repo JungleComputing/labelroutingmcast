@@ -218,10 +218,11 @@ public class LableRoutingMulticast extends Thread implements Upcall {
                 return false;
             }
             
-            //System.err.println("Writing message " + m.id + "/" + m.num 
-            //        + " local " + m.local);
+            // System.err.println("Writing message " + m.id + "/" + m.num 
+            //         + " to " + id
+            //         + ", sender " + m.sender
+            //         + ", destinations left = " + (m.destinationsUsed - index));
             
-
             // send the message to the target        
             WriteMessage wm = sp.newMessage();
             m.write(wm, index);        

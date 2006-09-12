@@ -58,7 +58,7 @@ public class LRMCOutputStream extends OutputStream {
         
         message.off = 0;
         message.len = len;        
-                
+
         if (lastPacket) {
             message.num = currentNUM | Message.LAST_PACKET;
             message.id = currentID++;
