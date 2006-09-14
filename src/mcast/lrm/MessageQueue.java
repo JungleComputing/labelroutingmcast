@@ -21,21 +21,33 @@ public class MessageQueue {
     public synchronized int size() { 
         return size;
     }
-    
-    public synchronized void enqueue(Message m) { 
-        
-        if (m.len == 0) {
-            System.out.println("Dangerous enqueue! len = 0");
-            (new Throwable()).printStackTrace();
+
+    /**
+     * Wait for a while. Return false if interrupted.
+     */
+    private synchronized boolean doWait() {
+        try {
+            wait(2000);
+        } catch(InterruptedException e) {
+            // Someone wants us to stop ...
+            return false;
         }
+        if (Thread.currentThread().interrupted()) {
+            // Someone wants us to stop ...
+            return false;
+        }
+        return true;
+    }
+    
+    public synchronized boolean enqueue(Message m) { 
+
         while (size >= limit) {            
-            try { 
-                wait();
-            } catch (Exception e) {
-                // TODO: handle exception
+            if (! doWait()) {
+                // Someone wants us to stop ...
+                return false;
             }
         }
-        
+
         if (head == null) { 
             head = tail = m;
             m.next = null;
@@ -46,18 +58,18 @@ public class MessageQueue {
         }
         
         size++;
+        return true;
     }
     
     public synchronized Message dequeue() { 
 
         while (size == 0) { 
-            try { 
-                wait();
-            } catch (Exception e) {
-                // TODO: handle exception
+            if (! doWait()) {
+                // Someone wants us to stop ...
+                return null;
             }
         }
-                
+
         Message tmp = head;         
         head = head.next;
         tmp.next = null;
@@ -69,21 +81,5 @@ public class MessageQueue {
         }
         
         return tmp;
-    }
-
-    public synchronized Message dequeue(long millis) { 
-
-        if (size == 0) { 
-            try { 
-                wait(millis);
-            } catch (Exception e) {
-                // TODO: handle exception
-            }
-        }
-        if (size == 0) {
-            return null;
-        }
-
-        return dequeue();
     }
 }

@@ -1,5 +1,7 @@
 package mcast.object;
 
+import ibis.util.GetLogger;
+
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -7,7 +9,12 @@ import mcast.lrm.LableRoutingMulticast;
 import mcast.lrm.Message;
 import mcast.lrm.MessageCache;
 
+import org.apache.log4j.Logger;
+
 public class LRMCOutputStream extends OutputStream {
+
+    private static final Logger logger
+            = GetLogger.getLogger(LRMCOutputStream.class.getName());
 
     private final LableRoutingMulticast mcast;
     private final MessageCache cache; 
@@ -45,10 +52,10 @@ public class LRMCOutputStream extends OutputStream {
     public byte [] write(int off, int len, boolean lastPacket) {
         
         if (closed) { 
-            System.err.println("____ got write(" + len + ") while closed!");
+            logger.info("____ got write(" + len + ") while closed!");
             return null;
         }
-                
+
         if (firstPacket) {
             firstPacket = false;
             currentNUM = 0;

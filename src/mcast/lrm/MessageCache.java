@@ -81,7 +81,7 @@ public class MessageCache {
     public Message get(int len) {
         
         if (len > MESSAGE_SIZE) { 
-            System.err.println("Creating new message of size " + len);
+            // System.err.println("Creating new message of size " + len);
             hits++;
             return new Message(len);
         }

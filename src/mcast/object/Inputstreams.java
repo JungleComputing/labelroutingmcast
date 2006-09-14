@@ -1,11 +1,18 @@
 package mcast.object;
 
+import ibis.util.GetLogger;
+
 import mcast.lrm.Message;
 import mcast.lrm.MessageCache;
+
+import org.apache.log4j.Logger;
 
 public class Inputstreams {
 
     private static final int DEFAULT_SIZE = 64;
+
+    private static final Logger logger
+            = GetLogger.getLogger(Inputstreams.class.getName());
 
     private LRMCInputStream[] inputStreams = new LRMCInputStream[DEFAULT_SIZE];
 
@@ -46,8 +53,8 @@ public class Inputstreams {
         hasData = tmp2;
 
         boolean[] tmp3 = new boolean[newSize];
-        System.arraycopy(busy, 0, tmp2, 0, busy.length);
-        busy = tmp2;
+        System.arraycopy(busy, 0, tmp3, 0, busy.length);
+        busy = tmp3;
     }
 
     public synchronized LRMCInputStream get(short sender, MessageCache cache,
@@ -71,13 +78,25 @@ public class Inputstreams {
     public synchronized void returnStream(LRMCInputStream is) {
         busy[is.getSource()] = false;
         if (is.haveData()) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("return stream " + is.getSource()
+                        + ", still has data");
+            }
             hasData(is);
+        } else {
+            if (logger.isDebugEnabled()) {
+                logger.debug("return stream " + is.getSource()
+                        + ", no data left");
+            }
         }
     }
 
-    public synchronized void hasData(LRMCInputStream is, Message m) {
-        is.addMessage(m);
-        hasData(is);
+    public synchronized boolean hasData(LRMCInputStream is, Message m) {
+        if (is.addMessage(m)) {
+            hasData(is);
+            return true;
+        }
+        return false;
     }
 
     public synchronized void hasData(LRMCInputStream is) {
@@ -88,7 +107,12 @@ public class Inputstreams {
             // when we are still reading from the stream. We will see if
             // there is new data when we return the stream. (Ceriel)
             hasData[src] = true;
-            // System.out.println("hasData " + is.getSource());
+            if (logger.isDebugEnabled()) {
+                logger.debug("Setting hasData for stream " + src);
+                if (! is.haveData()) {
+                    logger.debug("Set hasData but no data?", new Throwable());
+                }
+            }
             streamsWithData++;
         
             if (streamsWithData == 1) { 
@@ -101,9 +125,12 @@ public class Inputstreams {
         
         while (streamsWithData == 0) {
             try {
-                wait();
-            } catch (Exception e) {
-                // ignore
+                wait(2000);
+            } catch (InterruptedException e) {
+                return null;
+            }
+            if (Thread.currentThread().interrupted()) {
+                return null;
             }
         }
 
@@ -112,16 +139,30 @@ public class Inputstreams {
         for (int i=1;i<=size;i++) {
             if (hasData[(index + i) % size]) {
                 index = (index + i) % size;
-                hasData[index] = false;
                 break;
             }
         }
 
-        streamsWithData--;
+        if (logger.isDebugEnabled() && ! hasData[index]) {
+            logger.debug("GetNextFilledStream returns !hasData stream"
+                    + ", streamsWithData = " + streamsWithData
+                    + ", index = " + index, new Throwable());
+        }
 
-        // System.out.println("nextFilled " + inputStreams[index].getSource());
+        hasData[index] = false;
+        if (logger.isDebugEnabled()) {
+            logger.debug("start read from stream " + index);
+        }
 
         busy[index] = true;
+
+        if (logger.isDebugEnabled() && ! inputStreams[index].haveData()) {
+            logger.debug("GetNextFilledStream returns empty stream"
+                    + ", streamsWithData = " + streamsWithData
+                    + ", index = " + index, new Throwable());
+        }
+
+        streamsWithData--;
 
         return inputStreams[index];
     }

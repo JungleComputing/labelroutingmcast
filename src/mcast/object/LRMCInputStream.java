@@ -1,5 +1,7 @@
 package mcast.object;
 
+import ibis.util.GetLogger;
+
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -7,9 +9,14 @@ import mcast.lrm.Message;
 import mcast.lrm.MessageCache;
 import mcast.lrm.MessageQueue;
 
+import org.apache.log4j.Logger;
+
 //import mcast.lrm.ByteArrayCache;
 
 public class LRMCInputStream extends InputStream {
+
+    private static final Logger logger
+            = GetLogger.getLogger(LRMCInputStream.class.getName());
     
     private final short source;       
 
@@ -52,11 +59,16 @@ public class LRMCInputStream extends InputStream {
         return (current != null && index < current.len) || queue.size() > 0;
     }
     
-    public void addMessage(Message m) { 
+    public boolean addMessage(Message m) { 
         
-        queue.enqueue(m);
+        if (! queue.enqueue(m)) {
+            return false;
+        }
         
-        // System.err.println("Queued message " + m.id + "/" + m.num + "(" + m.len + ")");
+        if (logger.isDebugEnabled()) {
+            logger.debug("Queued message " + m.id + "/" + m.num
+                    + "(" + m.len + ")");
+        }
         
       //  synchronized (this) {
             // Note: use real length here!
@@ -66,6 +78,7 @@ public class LRMCInputStream extends InputStream {
         if (receiver != null && m.last) { 
             receiver.haveObject(this);
         }           
+        return true;
     }
 
     private void getMessage() { 
@@ -73,10 +86,10 @@ public class LRMCInputStream extends InputStream {
         current = queue.dequeue();        
         index = 0;
         
-        // System.err.println("Dequeued message " + current.id + "/" + current.num + "(" + current.len + ")");
-        
-  //      System.err.println("Extracted message " + current.id + "/" 
-  //              + current.num + " " + current.len + " " + current.last);
+        if (logger.isDebugEnabled()) {
+            logger.debug("Dequeued message " + current.id + "/" + current.num
+                    + "(" + current.len + ")");
+        }
     }
 
     private void checkMessage() throws IOException { 
@@ -94,14 +107,19 @@ public class LRMCInputStream extends InputStream {
                 // (this is more likely). To solve this, we simply drop the 
                 // current packet and get a new one. We keep trying until we see
                 // a 'first packet'.                    
-                System.err.println("___ Dropping packet " + current.id + "/" + 
+                logger.info("___ Dropping packet " + current.id + "/" + 
                         current.num + " [" + current.len + "] " +
                                 "since it's not the first one!");                
                 freeMessage();
                 getMessage();
+                if (current == null) {
+                    return;
+                }
             } 
         
-            //System.err.println("Starting new series " + current.id);            
+            if (logger.isDebugEnabled()) {
+                logger.debug("Starting new series " + current.id);            
+            }
                         
             currentID  = current.id;
             currentNum = 0;
@@ -150,8 +168,10 @@ public class LRMCInputStream extends InputStream {
     private void freeMessage() { 
         // Free the current message and updates the currentID if necessary
 
-        //System.err.println("Freed message " + current.id + "/" + current.num 
-        //        + " last = " + current.last);
+        if (logger.isDebugEnabled()) {
+            logger.debug("Freed message " + current.id + "/" + current.num 
+                    + " last = " + current.last);
+        }
         
         if (current.last) { 
             currentID  = 0;
@@ -172,14 +192,22 @@ public class LRMCInputStream extends InputStream {
         if (current == null) {
             getMessage();
         }
+        if (current == null) {
+            throw new IOException("Someone wants us to stop ...");
+        }
         
         checkMessage();
-                
+        if (current == null) {
+            throw new IOException("Someone wants us to stop ...");
+        }
+
         int leftover = current.len-index;
                 
         if (leftover <= len) { 
-      //      System.out.println("Copying " + index + " " + current.buffer.length  
-     //               + " " + off + " " + leftover);
+            if (logger.isDebugEnabled()) {
+                logger.debug("Copying " + index + " " + current.buffer.length  
+                        + " " + off + " " + leftover);
+            }
             
             System.arraycopy(current.buffer, index, b, off, leftover);            
             freeMessage();

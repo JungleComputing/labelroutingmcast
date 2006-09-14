@@ -3,11 +3,14 @@ package mcast.object;
 import ibis.io.SerializationBase;
 import ibis.io.SerializationInput;
 import ibis.io.SerializationOutput;
+
 import ibis.ipl.Ibis;
 import ibis.ipl.IbisException;
 import ibis.ipl.IbisIdentifier;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
+
 import java.util.LinkedList;
 
 import mcast.lrm.LableRoutingMulticast;
@@ -34,8 +37,9 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     
     private MessageCache cache; 
 
-    private boolean reading = false;
     private boolean finish = false;
+    private boolean receiverDone = false;
+    private Thread receiver = null;
     
     private Inputstreams inputStreams = new Inputstreams();
     
@@ -93,8 +97,7 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
         // inputStreams.hasData(tmp);
         // Fix: avoid race: message may have been read before setting
         // hasData. (Ceriel)
-        inputStreams.hasData(tmp, m);
-        return false;
+        return inputStreams.hasData(tmp, m);
     }
     
     public long send(IbisIdentifier [] id, Object o) throws IOException {
@@ -142,12 +145,10 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
         // Get the next stream that has some data
         LRMCInputStream stream = inputStreams.getNextFilledStream(); 
 
-        synchronized(this) {
-            if (finish) {
-                return null;
-            }
-            reading = true;
+        if (stream == null) {
+            throw new DoneException("Someone wants us to stop");
         }
+
         // Plug it into the deserializer
         bin.setInputStream(stream);
         bin.resetBytesRead();
@@ -160,35 +161,46 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
             totalData += bin.bytesRead();
         }
 
-        synchronized(this) {
-            reading = false;
-            if (finish) {
-                notifyAll();
-            }
-        }
-
         return result;
     }
     
-    private synchronized Object implicitReceive() { 
+    private synchronized Object implicitReceive() throws IOException { 
         while (objects.size() == 0) { 
             try { 
-                wait();
-            } catch (Exception e) {
-                // TODO: handle exception
+                wait(2000);
+            } catch (InterruptedException e) {
+                throw new DoneException("Someone wants us to stop ...");
+            }
+            if (Thread.currentThread().interrupted()) {
+                throw new DoneException("Someone wants us to stop ...");
             }
         }
-            
+
         return objects.removeFirst();
     }
     
     public Object receive() throws IOException, ClassNotFoundException {
-    
-        if (signal) { 
-            return implicitReceive();
-        } else { 
-            return explicitReceive();
-        }        
+        synchronized(this) {
+            if (finish) {
+                throw new DoneException("Someone wants us to stop ...");
+            }
+            receiverDone = false;
+            receiver = Thread.currentThread();
+        }
+        Object o;
+        try {
+            o = signal ? implicitReceive() : explicitReceive();
+        } finally {
+            synchronized(this) {
+                receiverDone = true;
+                if (finish) {
+                    notifyAll();
+                    throw new DoneException("Someone wants us to stop ...");
+                }
+                receiver = null;
+            }
+        }
+        return o;
     } 
     
     public long bytesRead() { 
@@ -206,11 +218,17 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     public void done() {
         synchronized(this) {
             finish = true;
-            while (reading) {
-                try {
-                    wait();
-                } catch(Exception e) {
-                    // ignored
+            // we can interrupt the receiver thread, but we don't know that
+            // it will actually finish, so we cannot join it.
+            if (receiver != null) {
+                receiver.interrupt();
+                // Wait until this is noticed.
+                while (! receiverDone) {
+                    try {
+                        wait();
+                    } catch(Exception e) {
+                        // What to do here? (TODO)
+                    }
                 }
             }
         }
@@ -234,8 +252,7 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
         if (finish) {
             return;
         }
-        reading = true;
-            
+
         // Plug it into the deserializer
         bin.setInputStream(stream);
         bin.resetBytesRead();
@@ -245,17 +262,15 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
             result = sin.readObject();
         } catch (Exception e) {
             succes = false;
+        } finally {
+            // Return the stream to the queue (if necessary) 
+            inputStreams.returnStream(stream);     
+            totalData += bin.bytesRead();
         }
-        
-        // Return the stream to the queue (if necessary) 
-        inputStreams.returnStream(stream);     
-        totalData += bin.bytesRead();
 
         if (succes) { 
             objects.addLast(result);
             notifyAll();
         }       
-
-        reading = false;
     }    
 }

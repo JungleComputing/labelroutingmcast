@@ -41,10 +41,12 @@ public class DynamicObjectArray {
     }
 
     public void remove(int index) {
+        /*
         if (index > last) {
             System.err.println("illegal remove in DynamicObjectArray");
             return;
         }
+        */
 
         objects[index] = null;
         if (index == last) {

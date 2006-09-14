@@ -12,15 +12,22 @@ import ibis.ipl.StaticProperties;
 import ibis.ipl.Upcall;
 import ibis.ipl.WriteMessage;
 
+import ibis.util.GetLogger;
+
 import java.io.IOException;
 import java.util.HashMap;
 
 import mcast.util.DynamicObjectArray;
 import mcast.util.IbisSorter;
 
+import org.apache.log4j.Logger;
+
 public class LableRoutingMulticast extends Thread implements Upcall {
 
     private final static int ZOMBIE_THRESHOLD = 10000;
+
+    private static final Logger logger
+            = GetLogger.getLogger(LableRoutingMulticast.class.getName());
 
     private final Ibis ibis;
     private final PortType portType;    
@@ -35,8 +42,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
     private final DynamicObjectArray sendports = new DynamicObjectArray();    
     private final DynamicObjectArray diedmachines = new DynamicObjectArray();
     
-    private boolean mustStop = false;    
-    private int sending = 0;    
+    private boolean finish = false;
     private boolean changeOrder = false;    
     
     private short [] destinations = null;
@@ -82,7 +88,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
     private synchronized SendPort getSendPort(int id) {
         
         if (id == -1) { 
-            System.err.println("Ignoring " + id);
+            logger.info("Ignoring " + id);
             return null;
         }
                 
@@ -108,10 +114,10 @@ public class LableRoutingMulticast extends Thread implements Upcall {
                     // happens.
                     diedmachines.remove(id);
                     
-                    System.err.println("Sender insists that " + id  
+                    logger.info("Sender insists that " + id  
                             + " is still allive, so I'll try again!");
                 } else { 
-                    System.err.println("Ignoring " + id + " since it's dead!");
+                    logger.info("Ignoring " + id + " since it's dead!");
                     return null;
                 }                
             }
@@ -142,26 +148,33 @@ public class LableRoutingMulticast extends Thread implements Upcall {
                     tmp = ibis.registry().lookupReceivePort("Ring-" + name + "-" 
                             + ibisID.name(), 10000);
                 } 
+
+                // Note: going to the nameserver may cause us to loose
+                // any 'interrupted' information, so we need a finish
+                // flag as well.
+                if (finish) {
+                    return null;
+                }
                 
                 if (tmp != null) {                 
                     sp.connect(tmp, 10000);                
                     sendports.put(id, sp);
                 } else if (ibisID != null) {
-                    System.err.println("Lookup of port " + 
+                    logger.info("Lookup of port " + 
                             "Ring-" + name + "-"+ ibisID.name() + "failed!");
                     failed = true;
                 } else {
-                    System.err.println("No Ibis yet at position " + id);
+                    logger.info("No Ibis yet at position " + id);
                     failed = true;
                 }
             } catch (IOException e) {
                 failed = true;                
-                e.printStackTrace(System.err);                
+                logger.info("Got exception ", e);
             } 
             
             if (failed) {
-                System.err.println("Failed to connect to " + id 
-                        + " - informing nameserver!");
+                logger.info("Failed to connect to " + id 
+                            + " - informing nameserver!");
                                 
                 // notify the nameserver that this machine may be dead...
                 try { 
@@ -170,13 +183,11 @@ public class LableRoutingMulticast extends Thread implements Upcall {
                     } 
                     diedmachines.put(id, new Long(System.currentTimeMillis()));                    
                 } catch (Exception e2) {
-                    
-                    System.err.println("Failed to inform nameserver! " + e2);
-                    
+                    logger.info("Failed to inform nameserver! " + e2);
                     // ignore
                 }
                 
-                System.err.println("Done informing nameserver");                                
+                logger.info("Done informing nameserver");
                 return null;
             }
         }
@@ -184,62 +195,51 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         return sp;
     }
 
-    // Returns true if we should terminate.
-    private boolean internalSend(Message m) {
+    private void internalSend(Message m) {
         if (m.destinationsUsed == 0) {  
-            return false; 
+            return;
         }
 
-        
         // Get the next target from the destination array. If this fails, get 
         // the next one, etc. If no working destination is found we give up.  
         int index = 0;        
         SendPort sp = null;
         short id = -1;
         
-        // Made synchronized: sendports may be closed asynchronously by
-        // call to done(). (Ceriel)
-        synchronized(this) {
-            if (mustStop) {
-                // Sendports may be closed! (Ceriel)
-               return true;
-            }
-            sending++;
-        }
         do { 
             id = m.destinations[index++]; 
             sp = getSendPort(id); 
+            if (sp == null) {
+                synchronized(this) {
+                    if (finish) {
+                        return;
+                    }
+                }
+            }
         } while (sp == null && index < m.destinationsUsed);
         
         try {
             if (sp == null) { 
                 // No working destinations where found, so give up!
-                System.err.println("No working destinations found, giving up!");            
-                return false;
+                logger.info("No working destinations found, giving up!");
+                return;
             }
             
-            // System.err.println("Writing message " + m.id + "/" + m.num 
-            //         + " to " + id
-            //         + ", sender " + m.sender
-            //         + ", destinations left = " + (m.destinationsUsed - index));
+            if (logger.isDebugEnabled()) {
+                logger.debug("Writing message " + m.id + "/" + m.num 
+                     + " to " + id
+                     + ", sender " + m.sender
+                     + ", destinations left = " + (m.destinationsUsed - index));
+            }
             
             // send the message to the target        
             WriteMessage wm = sp.newMessage();
             m.write(wm, index);        
             bytes += wm.finish();
         } catch (IOException e) {
-            System.err.println("Write to " + id + " failed! " + e);
-            e.printStackTrace(System.err);
+            logger.info("Write to " + id + " failed! ", e);
             sendports.remove(id);            
-        } finally {
-            synchronized(this) {
-                sending--;
-                if (sending == 0 && sendQueue.size() == 0) {
-                    notifyAll();
-                }
-            }
         }
-        return false;
     } 
 
     public synchronized void addIbis(IbisIdentifier ibis) {
@@ -248,10 +248,10 @@ public class LableRoutingMulticast extends Thread implements Upcall {
             knownIbis.put(ibis, new Short(nextIbisID));            
             ibisList.put(nextIbisID, ibis);
             
-            // System.err.println("Adding Ibis " + nextIbisID + " " + ibis);
+            logger.info("Adding Ibis " + nextIbisID + " " + ibis);
                                     
             if (ibis.equals(this.ibis.identifier())) {                
-                // System.err.println("I am " + nextIbisID + " " + ibis);
+                logger.info("I am " + nextIbisID + " " + ibis);
                 myID = nextIbisID;
             }
         
@@ -265,7 +265,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         Short tmp = (Short) knownIbis.remove(ibis);
         
         if (tmp != null) {
-            System.err.println("Removing ibis " + tmp.shortValue() + " " + ibis);
+            logger.info("Removing ibis " + tmp.shortValue() + " " + ibis);
             ibisList.remove(tmp.shortValue());
         }
     }
@@ -277,7 +277,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         if (s != null) { 
             return s.shortValue();
         } else { 
-            //System.err.println("Ibis " + ibis + " not known!");
+            logger.debug("Ibis " + ibis + " not known!");
             return -1;
         }
     }
@@ -294,8 +294,8 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         
         for (int i=0;i<destinations.length;i++) { 
             this.destinations[i] = getIbisID(destinations[i]);            
-            //System.err.println("  " + i + " (" + destinations[i].name() + " at " 
-            //        + destinations[i].cluster() + ") -> " + this.destinations[i]);
+            logger.debug("  " + i + " (" + destinations[i].name() + " at " 
+                  + destinations[i].cluster() + ") -> " + this.destinations[i]);
         }
     }
     
@@ -329,7 +329,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
     public boolean send(int id, int num, byte [] message, int off, int len) {        
         
         if (myID == -1) {
-            System.err.println("Cannot send packet: local ID isn't known!");
+            logger.debug("Cannot send packet: local ID isn't known!");
             return true;            
         }
         
@@ -361,31 +361,27 @@ public class LableRoutingMulticast extends Thread implements Upcall {
     
     public void run() { 
 
-        boolean done = false;
-        
-        while (!done) {   
-
-            Message m = (Message) sendQueue.dequeue(5000);
+        for (;;) {
+            Message m = (Message) sendQueue.dequeue();
             if (m == null) {
-                synchronized(this) {
-                    done = mustStop;
-                }
-                continue;
+                // Someone wants us to stop
+                return;
             }
 
             try { 
-                done = internalSend(m);
+                internalSend(m);
             } catch (Exception e) {
-                System.err.println("Sender thread got exception! " + e);
-                e.printStackTrace(System.err);
+                logger.info("Sender thread got exception! ", e);
             }
 
             if (!m.local) {        
                 try { 
-                    receiver.gotMessage(m);                 
+                    if (! receiver.gotMessage(m)) {
+                        // Someone wants us to stop
+                        return;
+                    }
                 } catch (Throwable e) {
-                    System.err.println("Delivery failed! " + e);
-                    e.printStackTrace(System.err);
+                    logger.info("Delivery failed! ", e);
                 }            
             } else {             
                 cache.put(m);
@@ -394,15 +390,14 @@ public class LableRoutingMulticast extends Thread implements Upcall {
     }
 
     public void done() {
-        synchronized (this) {
-            while (sending != 0 || sendQueue.size() != 0) {
-                try {
-                    wait();
-                } catch(Exception e) {
-                    // ignored
-                }
-            }
-            mustStop = true;
+        synchronized(this) {
+            finish = true;
+        }
+        interrupt();
+        try {
+            join(10000);
+        } catch(Exception e) {
+            // ignored
         }
         try {             
             receive.disableConnections();
@@ -434,14 +429,17 @@ public class LableRoutingMulticast extends Thread implements Upcall {
             message = cache.get(len);                        
             message.read(rm, len, dst);            
 
+            if (logger.isDebugEnabled()) {
+                logger.debug("Reading message " + message.id + "/"
+                        + message.num + " from " + message.sender);
+            }
             // Is this OK? sendQueue may block (is not allowed in upcall)!
             // However, calling finish() here may change the message order,
             // so we cannot do that. (Ceriel).
             sendQueue.enqueue(message);
             
         } catch (IOException e) {
-            System.err.println("Failed to receive message: " + e);
-            e.printStackTrace(System.err);
+            logger.info("Failed to receive message: ", e);
             rm.finish(e);
             
             if (message != null) { 
