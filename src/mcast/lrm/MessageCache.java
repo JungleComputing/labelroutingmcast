@@ -24,17 +24,20 @@ public class MessageCache {
     }
     
     public synchronized void put(Message m) {         
-        if (size < MAX_SIZE && 
-                m.buffer != null && m.buffer.length == MESSAGE_SIZE) {
-            
-            m.next = cache;
-            cache = m;
-            size++;
-            store++;
-        } else {      
-            m.next = null;
-            discard++;
-        }        
+        m.refcount--;
+        if (m.refcount == 0) {
+            if (size < MAX_SIZE && 
+                    m.buffer != null && m.buffer.length == MESSAGE_SIZE) {
+                
+                m.next = cache;
+                cache = m;
+                size++;
+                store++;
+            } else {      
+                m.next = null;
+                discard++;
+            }        
+        }
     }
     
     /*
@@ -91,18 +94,21 @@ public class MessageCache {
 
     public synchronized Message get() {
 
+        Message tmp = null;
+
         if (size == 0) {
             miss++;
-            return new Message(MESSAGE_SIZE);
+            tmp =  new Message(MESSAGE_SIZE);
+        } else {
+            hits++;
+            
+            tmp = cache;
+            cache = cache.next;
+            size--;
         }
-        
-        hits++;
-        
-        Message tmp = cache;
-        cache = cache.next;
         tmp.next = null;
         tmp.local = false;
-        size--;
+        tmp.refcount = 1;
 
         return tmp;               
     }

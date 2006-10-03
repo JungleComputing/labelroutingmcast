@@ -13,6 +13,7 @@ import ibis.ipl.Upcall;
 import ibis.ipl.WriteMessage;
 
 import ibis.util.GetLogger;
+import ibis.util.TypedProperties;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -28,6 +29,8 @@ public class LableRoutingMulticast extends Thread implements Upcall {
 
     private static final Logger logger
             = GetLogger.getLogger(LableRoutingMulticast.class.getName());
+    private static final int QUEUE_SIZE
+            = TypedProperties.intProperty("lrmc.queueSize", 32);
 
     private final Ibis ibis;
     private final PortType portType;    
@@ -55,7 +58,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
    
     private long bytes = 0;
     
-    private MessageQueue sendQueue = new MessageQueue(32);
+    private MessageQueue sendQueue = new MessageQueue(QUEUE_SIZE);
       
     public LableRoutingMulticast(Ibis ibis, MessageReceiver m, MessageCache c, 
             String name) throws IOException, IbisException {
@@ -372,24 +375,14 @@ public class LableRoutingMulticast extends Thread implements Upcall {
                 internalSend(m);
             } catch (Exception e) {
                 logger.info("Sender thread got exception! ", e);
-            }
-
-            if (!m.local) {        
-                try { 
-                    if (! receiver.gotMessage(m)) {
-                        // Someone wants us to stop
-                        return;
-                    }
-                } catch (Throwable e) {
-                    logger.info("Delivery failed! ", e);
-                }            
-            } else {             
+            } finally {
                 cache.put(m);
-            } 
+            }
         }    
     }
 
     public void done() {
+        // sendQueue.printTime();
         synchronized(this) {
             finish = true;
         }
@@ -433,6 +426,16 @@ public class LableRoutingMulticast extends Thread implements Upcall {
                 logger.debug("Reading message " + message.id + "/"
                         + message.num + " from " + message.sender);
             }
+
+            if (!message.local) {        
+                message.refcount++;
+                try { 
+                    receiver.gotMessage(message);
+                } catch (Throwable e) {
+                    logger.info("Delivery failed! ", e);
+                }
+            }
+
             // Is this OK? sendQueue may block (is not allowed in upcall)!
             // However, calling finish() here may change the message order,
             // so we cannot do that. (Ceriel).

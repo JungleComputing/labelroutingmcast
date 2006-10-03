@@ -1,5 +1,7 @@
 package mcast.lrm;
 
+// import ibis.util.Timer;
+
 public class MessageQueue {
 
     private final int limit;
@@ -8,6 +10,8 @@ public class MessageQueue {
     private Message tail; 
     
     private int size = 0;
+
+    // Timer enqueueTimer = Timer.createTimer();
 
     public MessageQueue() { 
         // no limit...
@@ -42,11 +46,17 @@ public class MessageQueue {
     public synchronized boolean enqueue(Message m) { 
 
         while (size >= limit) {            
-            if (! doWait()) {
-                // Someone wants us to stop ...
-                return false;
-            }
+            // enqueueTimer.start();
+            // try {
+                if (! doWait()) {
+                    // Someone wants us to stop ...
+                    return false;
+                }
+            // } finally {
+            //     enqueueTimer.stop();
+            // }
         }
+
 
         if (head == null) { 
             head = tail = m;
@@ -82,4 +92,9 @@ public class MessageQueue {
         
         return tmp;
     }
+
+//    public void printTime() {
+//        System.out.println("lrmc: wait " + enqueueTimer.nrTimes()
+//                + " times, total " + Timer.format(enqueueTimer.totalTimeVal()));
+//    }
 }

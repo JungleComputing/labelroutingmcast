@@ -13,6 +13,8 @@ public class Message {
     public static final int LAST_PACKET = 1 << 31;
     
     public short sender;
+
+    short refcount;
     
     public short [] destinations;
     public int destinationsUsed;

@@ -8,6 +8,8 @@ import ibis.ipl.Ibis;
 import ibis.ipl.IbisException;
 import ibis.ipl.IbisIdentifier;
 
+import ibis.util.TypedProperties;
+
 import java.io.IOException;
 import java.io.InterruptedIOException;
 
@@ -19,6 +21,9 @@ import mcast.lrm.MessageCache;
 import mcast.lrm.MessageReceiver;
 
 public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
+
+    public static final int MESSAGE_SIZE
+        = TypedProperties.intProperty("lrmc.messageSize", 8 * 1024);
    
     private LableRoutingMulticast lrmc; 
     
@@ -56,7 +61,7 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
                 
         this.signal = signal;
         
-        cache = new MessageCache(1500, 8*1024);
+        cache = new MessageCache(1500, MESSAGE_SIZE);
                 
         lrmc = new LableRoutingMulticast(ibis, this, cache, changeOrder, name);
         

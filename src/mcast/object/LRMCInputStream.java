@@ -5,6 +5,8 @@ import ibis.util.GetLogger;
 import java.io.IOException;
 import java.io.InputStream;
 
+import java.util.ArrayList;
+
 import mcast.lrm.Message;
 import mcast.lrm.MessageCache;
 import mcast.lrm.MessageQueue;
@@ -22,7 +24,7 @@ public class LRMCInputStream extends InputStream {
 
     private final ObjectReceiver receiver;
     
-    private final MessageQueue queue = new MessageQueue();
+    private final ArrayList queue = new ArrayList();
     
     private Message current = null; 
     
@@ -54,15 +56,19 @@ public class LRMCInputStream extends InputStream {
     }
     
     public boolean haveData() {        
-        // NOTE: only used when nobody reads from the stream anymore, so it's 
-        // not necessary to synchronize ...
-        return (current != null && index < current.len) || queue.size() > 0;
+        if (current != null && index < current.len) {
+            return true;
+        }
+        synchronized(queue) {
+            return queue.size() != 0;
+        }
     }
     
     public boolean addMessage(Message m) { 
         
-        if (! queue.enqueue(m)) {
-            return false;
+        synchronized(queue) {
+            queue.add(m);
+            queue.notify();
         }
         
         if (logger.isDebugEnabled()) {
@@ -82,8 +88,17 @@ public class LRMCInputStream extends InputStream {
     }
 
     private void getMessage() { 
+        synchronized(queue) {
+            while (queue.size() == 0) {
+                try {
+                    queue.wait();
+                } catch(Exception e) {
+                    // ignored
+                }
+            }
+            current = (Message) queue.remove(0);        
+        }
 
-        current = queue.dequeue();        
         index = 0;
         
         if (logger.isDebugEnabled()) {
@@ -186,7 +201,7 @@ public class LRMCInputStream extends InputStream {
         cache.put(current);        
         current = null;
     }
-    
+
     public int read(byte b[], int off, int len) throws IOException {
         
         if (current == null) {
