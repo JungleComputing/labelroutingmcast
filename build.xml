@@ -8,7 +8,7 @@
     <property name="srcdir" value="./src"/>
     <property name="builddir" value="./build"/>
     <property name="distdir" value="./jars"/>
-    <property name="jar" value="${base}/${distdir}/lrmc.jar"/>
+    <property name="jar" value="${base}/${distdir}/lrmc-1.4.jar"/>
 
     <path id="external.classpath">
 	<pathelement path="${base}/${builddir}"/>
