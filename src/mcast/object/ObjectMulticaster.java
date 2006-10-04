@@ -13,6 +13,7 @@ import ibis.util.TypedProperties;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 
 import mcast.lrm.LableRoutingMulticast;
@@ -50,6 +51,8 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     
     private boolean destinationSet = false;
     private IbisIdentifier [] destination = null; 
+
+    private HashMap ackers = new HashMap();
     
     public ObjectMulticaster(Ibis ibis, String name) 
         throws IOException, IbisException {       
@@ -85,7 +88,20 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     public void removeIbis(IbisIdentifier id) { 
         lrmc.removeIbis(id);
     }    
-        
+
+    public void gotDone(int id) {
+        Integer iid = new Integer(id);
+        SendDoneUpcaller acker = (SendDoneUpcaller) ackers.get(iid);
+        if (acker != null) {
+            acker.sendDone();
+            ackers.remove(iid);
+        }
+    }
+
+    public void sendDoneUpcallerClear() {
+        ackers.clear();
+    }
+
     public boolean gotMessage(Message m) {
 
         LRMCInputStream tmp;
@@ -106,28 +122,41 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     }
     
     public long send(IbisIdentifier [] id, Object o) throws IOException {
-        setDestination(id);
-        return send(o);
+        return send(id, o, null);
     }
     
-    public synchronized long send(Object o) throws IOException {
+    public long send(Object o) throws IOException {
+        return send(null, o, null);
+    }
+    
+    public long send(Object o, SendDoneUpcaller acker) throws IOException {
+        return send(null, o, acker);
+    }
+    
+    public synchronized long send(IbisIdentifier [] id, Object o,
+            SendDoneUpcaller acker) throws IOException {
 
-        // check if a new destination array is available....
-        synchronized (this) {
-            if (destination != null) {
-                lrmc.setDestination(destination);
-                destination = null;
-                destinationSet = true;            
-            } else if (!destinationSet) { 
-                throw new IOException("No destination set!");
-            }            
+        if (id != null) {
+            setDestination(id);
         }
+        // check if a new destination array is available....
+        if (destination != null) {
+            lrmc.setDestination(destination);
+            destination = null;
+            destinationSet = true;            
+        } else if (!destinationSet) { 
+            throw new IOException("No destination set!");
+        }            
         
         // We only want to return the number of bytes written in this bcast, so 
         // reset the count.
         bout.resetBytesWritten();               
         
         os.reset();
+
+        if (acker != null) {
+            ackers.put(new Integer(os.currentID), acker);
+        }
         
         // write the object and reset the stream
         sout.reset(true);              

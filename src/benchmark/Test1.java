@@ -69,6 +69,9 @@ public class Test1 extends TestBase implements MessageReceiver {
 
         done();
     }
+
+    public void gotDone(int id) {
+    }
             
     private void runTest() { 
 

@@ -199,14 +199,34 @@ public class LableRoutingMulticast extends Thread implements Upcall {
     }
 
     private void internalSend(Message m) {
+        SendPort sp = null;
         if (m.destinationsUsed == 0) {  
+            if (m.last) {
+                sp = getSendPort(m.sender); 
+                if (sp != null) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Writing DONE message " + m.id
+                             + " to sender "  + m.sender);
+                    }
+                    try {
+                        WriteMessage wm = sp.newMessage();
+                        wm.writeInt(-1);
+                        wm.writeInt(m.id);
+                        wm.finish();
+                    } catch(IOException e) {
+                        logger.debug("Writing DONE message to "
+                                + m.sender + " failed");
+                    }
+                } else if (logger.isDebugEnabled()) {
+                    logger.debug("No sendport for sender " + m.sender);
+                }
+            }
             return;
         }
 
         // Get the next target from the destination array. If this fails, get 
         // the next one, etc. If no working destination is found we give up.  
         int index = 0;        
-        SendPort sp = null;
         short id = -1;
         
         do { 
@@ -417,6 +437,15 @@ public class LableRoutingMulticast extends Thread implements Upcall {
             
         try {
             int len = rm.readInt();
+            if (len == -1) {
+                // DONE message
+                int id = rm.readInt();
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Got DONE for message " + id);
+                }
+                receiver.gotDone(id);
+                return;
+            }
             int dst = rm.readInt();
             
             message = cache.get(len);                        

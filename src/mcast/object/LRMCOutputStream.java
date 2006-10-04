@@ -19,7 +19,7 @@ public class LRMCOutputStream extends OutputStream {
     private final LableRoutingMulticast mcast;
     private final MessageCache cache; 
     
-    private int currentID = 1;  
+    int currentID = 1;  
     private int currentNUM = 0;  
         
     private boolean closed = false;    
