@@ -103,7 +103,7 @@ public class Test5 extends TestBase {
         } 
 
         // Tell eveyone that I'm done
-        omc.send(getParticipants(false), null, null);
+        omc.send(getParticipants(false), null);
         
         waitForOthersToQuit();
 

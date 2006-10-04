@@ -13,7 +13,6 @@ import ibis.util.TypedProperties;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 
 import mcast.lrm.LableRoutingMulticast;
@@ -40,6 +39,7 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     private final LinkedList objects = new LinkedList();
     
     private long totalData = 0;
+    private long lastBytesWritten = 0;
     
     private MessageCache cache; 
 
@@ -52,16 +52,22 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     private boolean destinationSet = false;
     private IbisIdentifier [] destination = null; 
 
-    private HashMap ackers = new HashMap();
-    
+    private final SendDoneUpcaller sendDoneUpcaller;
+
     public ObjectMulticaster(Ibis ibis, String name) 
         throws IOException, IbisException {       
-        this(ibis, false, false, name);
+        this(ibis, false, false, name, null);
     }
     
     public ObjectMulticaster(Ibis ibis, boolean changeOrder, boolean signal, 
             String name) throws IOException, IbisException {
+        this(ibis, changeOrder, signal, name, null);
+    }
+
+    public ObjectMulticaster(Ibis ibis, boolean changeOrder, boolean signal, 
+            String name, SendDoneUpcaller s) throws IOException, IbisException {
                 
+        this.sendDoneUpcaller = s;
         this.signal = signal;
         
         cache = new MessageCache(1500, MESSAGE_SIZE);
@@ -90,16 +96,9 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     }    
 
     public void gotDone(int id) {
-        Integer iid = new Integer(id);
-        SendDoneUpcaller acker = (SendDoneUpcaller) ackers.get(iid);
-        if (acker != null) {
-            acker.sendDone();
-            ackers.remove(iid);
+        if (sendDoneUpcaller != null) {
+            sendDoneUpcaller.sendDone(id);
         }
-    }
-
-    public void sendDoneUpcallerClear() {
-        ackers.clear();
     }
 
     public boolean gotMessage(Message m) {
@@ -121,24 +120,13 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
         return inputStreams.hasData(tmp, m);
     }
     
-    public long send(IbisIdentifier [] id, Object o) throws IOException {
-        return send(id, o, null);
+    public int send(IbisIdentifier[] id, Object o) throws IOException {
+        setDestination(id);
+        return send(o);
     }
     
-    public long send(Object o) throws IOException {
-        return send(null, o, null);
-    }
-    
-    public long send(Object o, SendDoneUpcaller acker) throws IOException {
-        return send(null, o, acker);
-    }
-    
-    public synchronized long send(IbisIdentifier [] id, Object o,
-            SendDoneUpcaller acker) throws IOException {
+    public synchronized int send(Object o) throws IOException {
 
-        if (id != null) {
-            setDestination(id);
-        }
         // check if a new destination array is available....
         if (destination != null) {
             lrmc.setDestination(destination);
@@ -154,9 +142,7 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
         
         os.reset();
 
-        if (acker != null) {
-            ackers.put(new Integer(os.currentID), acker);
-        }
+        int retval = os.currentID;
         
         // write the object and reset the stream
         sout.reset(true);              
@@ -164,10 +150,16 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
         sout.flush();
 
         bout.forcedFlush();
+
+        lastBytesWritten = bout.bytesWritten();
         
-        totalData += bout.bytesWritten();
+        totalData += lastBytesWritten;
         
-        return bout.bytesWritten();
+        return retval;
+    }
+
+    public long lastSize() {
+        return lastBytesWritten;
     }
     
     private Object explicitReceive() throws IOException, ClassNotFoundException {
