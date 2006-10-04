@@ -50,15 +50,24 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     
     private boolean destinationSet = false;
     private IbisIdentifier [] destination = null; 
+
+    private SendDoneUpcaller sendDoneUpcaller = null;
     
     public ObjectMulticaster(Ibis ibis, String name) 
         throws IOException, IbisException {       
-        this(ibis, false, false, name);
+        this(ibis, false, false, name, null);
     }
     
     public ObjectMulticaster(Ibis ibis, boolean changeOrder, boolean signal, 
             String name) throws IOException, IbisException {
+        this(ibis, changeOrder, signal, name, null);
+    }
+
+    public ObjectMulticaster(Ibis ibis, boolean changeOrder, boolean signal, 
+            String name, SendDoneUpcaller sendDoneUpcaller)
+            throws IOException, IbisException {
                 
+        this.sendDoneUpcaller = sendDoneUpcaller;
         this.signal = signal;
         
         cache = new MessageCache(1500, MESSAGE_SIZE);
@@ -85,7 +94,13 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     public void removeIbis(IbisIdentifier id) { 
         lrmc.removeIbis(id);
     }    
-        
+
+    public void gotDone(int id) {
+        if (sendDoneUpcaller != null) {
+            sendDoneUpcaller.sendDone(id);
+        }
+    }
+
     public boolean gotMessage(Message m) {
 
         LRMCInputStream tmp;
