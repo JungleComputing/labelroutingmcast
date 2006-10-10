@@ -72,7 +72,7 @@ public class MessageQueue {
         
         size++;
         
-        System.err.println("enqueue, q size = " + size);
+//        System.err.println("enqueue, q size = " + size);
         
         return true;
     }
@@ -91,7 +91,7 @@ public class MessageQueue {
         tmp.next = null;
         
         size--;
-        System.err.println("dequeue, q size = " + size);
+//        System.err.println("dequeue, q size = " + size);
 
         if (size == limit-1) { 
             notifyAll();
