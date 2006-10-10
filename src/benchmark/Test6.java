@@ -38,7 +38,7 @@ class OmcInfo implements SendDoneUpcaller {
             }
         }
         if(pos < 0) { // no empty slot left, choose the one with the lowest id
-            System.err.println("more than " + SIMULTANEOUS_SENDS + " outstanding broadcasts, assunming " + minId + " was lost");
+            System.err.println("more than " + SIMULTANEOUS_SENDS + " outstanding broadcasts, assuming " + minId + " was lost");
             pos = minPos;
         }
         
