@@ -10,7 +10,7 @@ import mcast.object.ObjectMulticaster;
 import mcast.object.SendDoneUpcaller;
 
 class OmcInfo implements SendDoneUpcaller {
-    static final int SIMULTANEOUS_SENDS = 50;
+    static final int SIMULTANEOUS_SENDS = 100;
     
     int[] ids = new int[SIMULTANEOUS_SENDS];
     Timer[] timers = new Timer[SIMULTANEOUS_SENDS];
