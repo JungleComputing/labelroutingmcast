@@ -31,15 +31,18 @@ public class MessageQueue {
      */
     private synchronized boolean doWait() {
         try {
-            wait(2000);
+            wait();
         } catch(InterruptedException e) {
             // Someone wants us to stop ...
             return false;
         }
+        
+        /*
         if (Thread.currentThread().interrupted()) {
             // Someone wants us to stop ...
             return false;
         }
+        */
         return true;
     }
     

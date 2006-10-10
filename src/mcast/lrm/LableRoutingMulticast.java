@@ -384,7 +384,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
     
     public void run() { 
 
-        for (;;) {
+        while (true) {
             Message m = (Message) sendQueue.dequeue();
             if (m == null) {
                 // Someone wants us to stop
@@ -446,6 +446,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
                 receiver.gotDone(id);
                 return;
             }
+            
             int dst = rm.readInt();
             
             message = cache.get(len);                        

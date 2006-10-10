@@ -96,7 +96,7 @@ public class Test3b extends TestBase {
         long time = end-start;
         double tp = ((count*data.getSize())/(1024.0*1024.0))/(time/1000.0);
         
-        System.err.println("Sender took " + time + " ms. TP = " + tp + " MB/s.");
+        System.err.println("Sender (aap) took " + time + " ms. TP = " + tp + " MB/s.");
     }
     
     private void runReceiver() throws IOException, ClassNotFoundException { 
@@ -115,7 +115,7 @@ public class Test3b extends TestBase {
         long time = end-start;
         double tp = (size/(1024.0*1024.0))/(time/1000.0);
         
-        System.err.println("Receiver took " + time + " ms. TP = " + tp + " MB/s.");
+        System.err.println("Receiver (aap) took " + time + " ms. TP = " + tp + " MB/s.");
     }
     
     public static void main(String [] args) {
