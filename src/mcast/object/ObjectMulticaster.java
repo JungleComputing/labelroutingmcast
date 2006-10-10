@@ -25,6 +25,9 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     public static final int MESSAGE_SIZE
         = TypedProperties.intProperty("lrmc.messageSize", 1 * 1024);
    
+    public static final int MESSAGE_CACHE_SIZE
+        = TypedProperties.intProperty("lrmc.messageCacheSize", 1500);
+    
     private LableRoutingMulticast lrmc; 
     
     private LRMCOutputStream os; 
