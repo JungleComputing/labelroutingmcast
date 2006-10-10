@@ -82,7 +82,8 @@ public class Test3b extends TestBase {
         
         long start = System.currentTimeMillis();
         
-        for (int i=0;i<count;i++) { 
+        for (int i=0;i<count;i++) {
+            System.err.print(".");
             omc.send(data);
             
             if (ring) { 
