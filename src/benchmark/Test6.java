@@ -25,9 +25,13 @@ class OmcInfo implements SendDoneUpcaller {
     synchronized void registerSend(int id) {
         int pos = -1;
         int minId = Integer.MAX_VALUE;
+        int minPos = -1;
         // find empty slot
         for(int i=0; i<ids.length; i++) {
-            if(ids[i] < minId) minId = ids[i];
+            if(ids[i] < minId) {
+                minId = ids[i];
+                minPos = i;
+            }
             if(ids[i] < 0) {
                 pos = i;
                 break;
@@ -35,7 +39,7 @@ class OmcInfo implements SendDoneUpcaller {
         }
         if(pos < 0) { // no empty slot left, choose the one with the lowest id
             System.err.println("more than " + SIMULTANEOUS_SENDS + " outstanding broadcasts, assunming " + minId + " was lost");
-            pos = minId;
+            pos = minPos;
         }
         
         ids[pos] = id;
