@@ -99,7 +99,7 @@ public class Test6 extends TestBase {
     
     private int machinesDone = 0;
 
-    private OmcInfo info = new OmcInfo();
+    private OmcInfo info;
     
     private class Receiver extends Thread { 
         
@@ -141,8 +141,8 @@ public class Test6 extends TestBase {
     } 
     
     public void init() throws IOException, IbisException {
+        info = new OmcInfo();
         omc = new ObjectMulticaster(ibis, true /* efficient multi-cluster */, false, "test", info);
-        
     }
     
     public void addIbis(IbisIdentifier id) {
