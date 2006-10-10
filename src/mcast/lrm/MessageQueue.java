@@ -31,7 +31,7 @@ public class MessageQueue {
      */
     private synchronized boolean doWait() {
         try {
-            wait(2000);
+            wait(200);
         } catch(InterruptedException e) {
             // Someone wants us to stop ...
             return false;
