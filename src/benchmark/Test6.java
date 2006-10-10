@@ -10,7 +10,7 @@ import mcast.object.ObjectMulticaster;
 import mcast.object.SendDoneUpcaller;
 
 class OmcInfo implements SendDoneUpcaller {
-    static final int SIMULTANEOUS_SENDS = 5000;
+    static final int SIMULTANEOUS_SENDS = 50;
     
     int[] ids = new int[SIMULTANEOUS_SENDS];
     Timer[] timers = new Timer[SIMULTANEOUS_SENDS];
@@ -65,7 +65,7 @@ class OmcInfo implements SendDoneUpcaller {
         timers[pos].stop();
         total.add(timers[pos]);
         
-        System.err.println("broadcast " + id + " took " + timers[pos].totalTime());
+        System.err.println("broadcast " + id + " took " + timers[pos].totalTime() + " (" + timers[pos].nrTimes() + " times)");
         timers[pos] = null;
     }
     
