@@ -23,7 +23,7 @@ import mcast.lrm.MessageReceiver;
 public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
 
     public static final int MESSAGE_SIZE
-        = TypedProperties.intProperty("lrmc.messageSize", 8 * 1024);
+        = TypedProperties.intProperty("lrmc.messageSize", 1 * 1024);
    
     private LableRoutingMulticast lrmc; 
     
