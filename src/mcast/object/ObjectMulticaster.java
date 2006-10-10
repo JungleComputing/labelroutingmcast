@@ -11,7 +11,6 @@ import ibis.ipl.IbisIdentifier;
 import ibis.util.TypedProperties;
 
 import java.io.IOException;
-import java.io.InterruptedIOException;
 
 import java.util.LinkedList;
 
@@ -25,7 +24,6 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     public static final int MESSAGE_SIZE
         = TypedProperties.intProperty("lrmc.messageSize", 8 * 1024);
    
-    
     public static final int MESSAGE_CACHE_SIZE
         = TypedProperties.intProperty("lrmc.messageCacheSize", 1500);
     
@@ -169,8 +167,8 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     private Object explicitReceive() throws IOException, ClassNotFoundException {
         
         Object result = null; 
-        IOException ioe = null;
-        ClassNotFoundException cnfe = null;
+//        IOException ioe = null;
+//        ClassNotFoundException cnfe = null;
 
         // Get the next stream that has some data
         LRMCInputStream stream = inputStreams.getNextFilledStream(); 
@@ -201,7 +199,7 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
             } catch (InterruptedException e) {
                 throw new DoneException("Someone wants us to stop ...");
             }
-            if (Thread.currentThread().interrupted()) {
+            if (Thread.interrupted()) {
                 throw new DoneException("Someone wants us to stop ...");
             }
         }

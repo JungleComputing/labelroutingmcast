@@ -4,12 +4,10 @@ import ibis.util.GetLogger;
 
 import java.io.IOException;
 import java.io.InputStream;
-
 import java.util.ArrayList;
 
 import mcast.lrm.Message;
 import mcast.lrm.MessageCache;
-import mcast.lrm.MessageQueue;
 
 import org.apache.log4j.Logger;
 

@@ -129,7 +129,7 @@ public class Inputstreams {
             } catch (InterruptedException e) {
                 return null;
             }
-            if (Thread.currentThread().interrupted()) {
+            if (Thread.interrupted()) {
                 return null;
             }
         }
