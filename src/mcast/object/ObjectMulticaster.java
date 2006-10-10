@@ -73,7 +73,7 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
         this.sendDoneUpcaller = s;
         this.signal = signal;
         
-        cache = new MessageCache(1500, MESSAGE_SIZE);
+        cache = new MessageCache(MESSAGE_CACHE_SIZE, MESSAGE_SIZE);
                 
         lrmc = new LableRoutingMulticast(ibis, this, cache, changeOrder, name);
         
