@@ -30,7 +30,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
     private static final Logger logger
             = GetLogger.getLogger(LableRoutingMulticast.class.getName());
     private static final int QUEUE_SIZE
-            = TypedProperties.intProperty("lrmc.queueSize", 32);
+            = TypedProperties.intProperty("lrmc.queueSize", 1000000);
 
     private final Ibis ibis;
     private final PortType portType;    
