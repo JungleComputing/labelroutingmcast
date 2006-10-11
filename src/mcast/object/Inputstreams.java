@@ -25,6 +25,8 @@ public class Inputstreams {
     private int index = 0;
 
     private int last = -1;
+
+    private boolean finish = false;
     
     private void add(LRMCInputStream is, short sender) {
         if (sender >= inputStreams.length) {
@@ -35,6 +37,16 @@ public class Inputstreams {
         if (sender > last) {
             last = sender;
         }
+    }
+
+    public synchronized void terminate() {
+        finish = true;
+        for (int i = 0; i <= last; i++) {
+            if (inputStreams[i] != null) {
+                inputStreams[i].terminate();
+            }
+        }
+        notifyAll();
     }
 
     private void resize(int minimumSize) {
@@ -123,15 +135,15 @@ public class Inputstreams {
 
     public synchronized LRMCInputStream getNextFilledStream() {
         
-        while (streamsWithData == 0) {
+        while (! finish && streamsWithData == 0) {
             try {
-                wait(2000);
-            } catch (InterruptedException e) {
-                return null;
+                wait();
+            } catch (Exception e) {
+                // ignored
             }
-            if (Thread.interrupted()) {
-                return null;
-            }
+        }
+        if (finish) {
+            return null;
         }
 
         final int size = inputStreams.length;

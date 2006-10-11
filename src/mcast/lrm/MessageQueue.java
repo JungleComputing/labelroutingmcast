@@ -11,6 +11,8 @@ public class MessageQueue {
     
     private int size = 0;
 
+    private boolean finish = false;
+
     // Timer enqueueTimer = Timer.createTimer();
 
     public MessageQueue() { 
@@ -21,45 +23,34 @@ public class MessageQueue {
     public MessageQueue(int limit) { 
         this.limit = limit;
     }
+
+    public synchronized void terminate() {
+        finish = true;
+//        System.out.println("lrmc: wait " + enqueueTimer.nrTimes()
+//                + " times, total " + Timer.format(enqueueTimer.totalTimeVal()));
+        notifyAll();
+    }
     
     public synchronized int size() { 
         return size;
     }
-
-    /**
-     * Wait for a while. Return false if interrupted.
-     */
-    private synchronized boolean doWait() {
-        try {
-            wait(200);
-        } catch(InterruptedException e) {
-            // Someone wants us to stop ...
-            return false;
-        }
-        
-        /*
-        if (Thread.currentThread().interrupted()) {
-            // Someone wants us to stop ...
-            return false;
-        }
-        */
-        return true;
-    }
     
-    public synchronized boolean enqueue(Message m) { 
+    public synchronized void enqueue(Message m) { 
 
-        while (size >= limit) {            
+        while (! finish && size >= limit) {            
             // enqueueTimer.start();
-            // try {
-                if (! doWait()) {
-                    // Someone wants us to stop ...
-                    return false;
-                }
+            try {
+                wait();
+            } catch(Exception e) {
+                // Ignored
             // } finally {
             //     enqueueTimer.stop();
-            // }
+            }
         }
 
+        if (finish) {
+            return;
+        }
 
         if (head == null) { 
             head = tail = m;
@@ -73,17 +64,20 @@ public class MessageQueue {
         size++;
         
 //        System.err.println("enqueue, q size = " + size);
-        
-        return true;
     }
     
     public synchronized Message dequeue() { 
 
-        while (size == 0) { 
-            if (! doWait()) {
-                // Someone wants us to stop ...
-                return null;
+        while (size == 0 && ! finish) { 
+            try {
+                wait();
+            } catch(Exception e) {
+                // Ignored
             }
+        }
+
+        if (finish) {
+            return null;
         }
 
         Message tmp = head;         
@@ -100,8 +94,4 @@ public class MessageQueue {
         return tmp;
     }
 
-//    public void printTime() {
-//        System.out.println("lrmc: wait " + enqueueTimer.nrTimes()
-//                + " times, total " + Timer.format(enqueueTimer.totalTimeVal()));
-//    }
 }

@@ -57,6 +57,8 @@ public class LableRoutingMulticast extends Thread implements Upcall {
     private short myID = -1;
    
     private long bytes = 0;
+
+    private boolean hasLocalReceivePorts;
     
     private MessageQueue sendQueue = new MessageQueue(QUEUE_SIZE);
       
@@ -78,16 +80,24 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         s.add("Communication", "ManyToOne, Reliable, AutoUpcalls");
         
         portType = ibis.createPortType("Ring", s);
+
+        s = ibis.properties();
+        hasLocalReceivePorts = s.isProp("communication", "LocalReceivePorts");
         
-        receive = portType.createReceivePort("Ring-" + name + "-" + ibis.identifier().name(), this);
+        if (hasLocalReceivePorts) {
+            logger.info("Using local receiveports");
+            receive = portType.createLocalReceivePort("Ring-" + name, this);
+        } else {
+            receive = portType.createReceivePort("Ring-" + name + "-" + ibis.identifier().name(), this);
+        }
         receive.enableConnections();
         receive.enableUpcalls();
                               
         super.setName("LableRoutingMulticast:" + name);
         this.start();
     }
-                       
-    
+
+
     private synchronized SendPort getSendPort(int id) {
         
         if (id == -1) { 
@@ -129,12 +139,12 @@ public class LableRoutingMulticast extends Thread implements Upcall {
             boolean failed = false;
             
             ReceivePortIdentifier tmp = null; 
-                            
+
+            IbisIdentifier ibisID = (IbisIdentifier) ibisList.get(id); 
+
             try { 
                 sp = portType.createSendPort();         
                 
-                IbisIdentifier ibisID = (IbisIdentifier) ibisList.get(id); 
-
                 if (ibisID == null) {
                     synchronized(this) {
                         try {
@@ -146,26 +156,33 @@ public class LableRoutingMulticast extends Thread implements Upcall {
                 }
 
                 ibisID = (IbisIdentifier) ibisList.get(id); 
-                
-                if (ibisID != null) { 
-                    tmp = ibis.registry().lookupReceivePort("Ring-" + name + "-" 
-                            + ibisID.name(), 10000);
-                } 
 
-                // Note: going to the nameserver may cause us to loose
-                // any 'interrupted' information, so we need a finish
-                // flag as well.
-                if (finish) {
-                    return null;
-                }
-                
-                if (tmp != null) {                 
-                    sp.connect(tmp, 10000);                
-                    sendports.put(id, sp);
-                } else if (ibisID != null) {
-                    logger.info("Lookup of port " + 
-                            "Ring-" + name + "-"+ ibisID.name() + "failed!");
-                    failed = true;
+                if (ibisID != null) {
+                    if (hasLocalReceivePorts) {
+                        if (ibisID != null) {
+                            sp.connect(ibisID, "Ring-" + name, 10000);
+                            sendports.put(id, sp);
+                        } else {
+                            logger.info("No Ibis yet at position " + id);
+                            failed = true;
+                        }
+                    } else {
+                        tmp = ibis.registry().lookupReceivePort("Ring-" + name + "-" 
+                                + ibisID.name(), 10000);
+
+                        if (finish) {
+                            return null;
+                        }
+                        
+                        if (tmp != null) {                 
+                            sp.connect(tmp, 10000);                
+                            sendports.put(id, sp);
+                        } else {
+                            logger.info("Lookup of port " + 
+                                "Ring-" + name + "-"+ ibisID.name() + "failed!");
+                            failed = true;
+                        }
+                    }
                 } else {
                     logger.info("No Ibis yet at position " + id);
                     failed = true;
@@ -181,8 +198,9 @@ public class LableRoutingMulticast extends Thread implements Upcall {
                                 
                 // notify the nameserver that this machine may be dead...
                 try { 
-                    if (tmp != null) { 
-                        ibis.registry().maybeDead(tmp.ibis());
+                    if (ibisID != null
+                            && (tmp != null || hasLocalReceivePorts)) { 
+                        ibis.registry().maybeDead(ibisID);
                     } 
                     diedmachines.put(id, new Long(System.currentTimeMillis()));                    
                 } catch (Exception e2) {
@@ -406,7 +424,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         synchronized(this) {
             finish = true;
         }
-        interrupt();
+        sendQueue.terminate();
         try {
             join(10000);
         } catch(Exception e) {

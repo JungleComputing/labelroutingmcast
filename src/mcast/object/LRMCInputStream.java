@@ -30,6 +30,8 @@ public class LRMCInputStream extends InputStream {
     
     private int currentID = 0;    
     private int currentNum = 0;    
+
+    private boolean finish = false;
           
     // private long memoryUsage = 0;     
 //    private int lowBound = 0;
@@ -48,7 +50,12 @@ public class LRMCInputStream extends InputStream {
         this.cache = cache;
         this.receiver = receiver;        
     }
-        
+
+    public synchronized void terminate() {
+        finish = true;
+        notifyAll();
+    }
+
     public short getSource() { 
         return source;
     }
@@ -57,16 +64,16 @@ public class LRMCInputStream extends InputStream {
         if (current != null && index < current.len) {
             return true;
         }
-        synchronized(queue) {
+        synchronized(this) {
             return queue.size() != 0;
         }
     }
     
     public boolean addMessage(Message m) { 
         
-        synchronized(queue) {
+        synchronized(this) {
             queue.add(m);
-            queue.notify();
+            notify();
         }
         
         if (logger.isDebugEnabled()) {
@@ -86,13 +93,17 @@ public class LRMCInputStream extends InputStream {
     }
 
     private void getMessage() { 
-        synchronized(queue) {
-            while (queue.size() == 0) {
+        synchronized(this) {
+            while (! finish && queue.size() == 0) {
                 try {
-                    queue.wait();
+                    wait();
                 } catch(Exception e) {
                     // ignored
                 }
+            }
+            if (finish) {
+                current = null;
+                return;
             }
             current = (Message) queue.remove(0);        
         }

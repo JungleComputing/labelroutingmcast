@@ -193,15 +193,15 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     }
     
     private synchronized Object implicitReceive() throws IOException { 
-        while (objects.size() == 0) { 
+        while (! finish && objects.size() == 0) { 
             try { 
-                wait(2000);
-            } catch (InterruptedException e) {
-                throw new DoneException("Someone wants us to stop ...");
+                wait();
+            } catch (Exception e) {
+                // Ignored
             }
-            if (Thread.interrupted()) {
-                throw new DoneException("Someone wants us to stop ...");
-            }
+        }
+        if (finish) {
+            throw new DoneException("Someone wants us to stop ...");
         }
 
         return objects.removeFirst();
@@ -246,10 +246,11 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     public void done() {
         synchronized(this) {
             finish = true;
-            // we can interrupt the receiver thread, but we don't know that
+            inputStreams.terminate();
+            notifyAll();
+            // we can tell the receiver thread, but we don't know that
             // it will actually finish, so we cannot join it.
             if (receiver != null) {
-                receiver.interrupt();
                 // Wait until this is noticed.
                 while (! receiverDone) {
                     try {
