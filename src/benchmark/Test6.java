@@ -24,7 +24,7 @@ class OmcInfo implements SendDoneUpcaller {
     public synchronized void sendDone(int id) {
         Timer t = map.remove(id);
         if(t == null) {
-            System.err.println("got upcall for unknow id!");
+            System.err.println("got upcall for unknow id: " + id);
             System.exit(1);
         }
         t.stop();
