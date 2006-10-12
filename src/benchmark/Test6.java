@@ -5,68 +5,32 @@ import ibis.ipl.IbisIdentifier;
 import ibis.util.Timer;
 
 import java.io.IOException;
+import java.util.HashMap;
 
 import mcast.object.ObjectMulticaster;
 import mcast.object.SendDoneUpcaller;
 
 class OmcInfo implements SendDoneUpcaller {
-    static final int SIMULTANEOUS_SENDS = 5000;
-    
-    int[] ids = new int[SIMULTANEOUS_SENDS];
-    Timer[] timers = new Timer[SIMULTANEOUS_SENDS];
+
+    HashMap<Integer, Timer> map = new HashMap<Integer, Timer>();
     Timer total = Timer.createTimer();
     
-    OmcInfo() {
-        for(int i=0; i<ids.length; i++) {
-            ids[i] = -1;
-        }
-    }
-
     synchronized void registerSend(int id) {
-        int pos = -1;
-        int minId = Integer.MAX_VALUE;
-        int minPos = -1;
-        // find empty slot
-        for(int i=0; i<ids.length; i++) {
-            if(ids[i] < minId) {
-                minId = ids[i];
-                minPos = i;
-            }
-            if(ids[i] < 0) {
-                pos = i;
-                break;
-            }
-        }
-        if(pos < 0) { // no empty slot left, choose the one with the lowest id
-            System.err.println("more than " + SIMULTANEOUS_SENDS + " outstanding broadcasts, assuming " + minId + " was lost");
-            pos = minPos;
-        }
-        
-        ids[pos] = id;
-        timers[pos] = Timer.createTimer();
-        timers[pos].start();
+        Timer t = Timer.createTimer();
+        map.put(id, t);
+        t.start();
     }
     
     public synchronized void sendDone(int id) {
-        int pos = -1;
-        for(int i=0; i<ids.length; i++) {
-            if(ids[i] == id) {
-                pos = i;
-                break;
-            }
+        Timer t = map.remove(id);
+        if(t == null) {
+            System.err.println("got upcall for unknow id!");
+            System.exit(1);
         }
+        t.stop();
+        total.add(t);
         
-        if(pos < 0) {
-            System.err.println("sendDone of a broadcast that was assumed lost");
-            return;
-        }
-        
-        ids[pos] = -1;
-        timers[pos].stop();
-        total.add(timers[pos]);
-        
-        System.err.println("broadcast " + id + " took " + timers[pos].totalTime());
-        timers[pos] = null;
+        System.err.println("broadcast " + id + " took " + t.totalTime());
     }
     
     void end() {
