@@ -150,6 +150,7 @@ public class Test6 extends TestBase {
         System.err.println("Total TP = " + tp + " MB/s. (includes warmup)");
               
         omc.done();
+        info.end();
         done();
     }
     
