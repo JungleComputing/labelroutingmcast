@@ -23,7 +23,7 @@ class OmcInfo implements SendDoneUpcaller {
     }
 
     synchronized void registerSend(int id) {
-/*        int pos = -1;
+        int pos = -1;
         int minId = Integer.MAX_VALUE;
         int minPos = -1;
         // find empty slot
@@ -45,11 +45,9 @@ class OmcInfo implements SendDoneUpcaller {
         ids[pos] = id;
         timers[pos] = Timer.createTimer();
         timers[pos].start();
-*/
     }
     
     public synchronized void sendDone(int id) {
-/*
         int pos = -1;
         for(int i=0; i<ids.length; i++) {
             if(ids[i] == id) {
@@ -69,7 +67,6 @@ class OmcInfo implements SendDoneUpcaller {
         
         System.err.println("broadcast " + id + " took " + timers[pos].totalTime());
         timers[pos] = null;
-*/
     }
     
     void end() {
