@@ -136,8 +136,9 @@ public class Test6 extends TestBase {
         } 
 
         // Tell eveyone that I'm done
-        omc.send(getParticipants(false), null);
-        
+        int id = omc.send(getParticipants(false), null);
+        info.registerSend(id);
+
         waitForOthersToQuit();
 
         long end = System.currentTimeMillis();
