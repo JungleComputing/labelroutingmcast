@@ -34,7 +34,7 @@ public class IbisSorter implements Comparator {
 
     public static void sort(IbisIdentifier local, IbisIdentifier [] ids, 
             int from, int to) { 
-    
+/*
         IbisSorter tmp = sorter;
         
         if (!local.name().equals(sorter.preferredName) ||
@@ -43,6 +43,25 @@ public class IbisSorter implements Comparator {
         }
         
         Arrays.sort(ids, from, to, tmp);
+  */
+        IbisIdentifier [] tmp = new IbisIdentifier[(to-from)+1];
+        tmp[0] = local;
+        
+        System.arraycopy(ids, from, tmp, 1, to-from);
+        
+        Arrays.sort(tmp, sorter);
+        
+        int index = 0;
+        
+        for (int i=0;i<tmp.length;i++) { 
+            if (tmp[i].equals(local)) { 
+                index = i;
+                break;
+            }
+        }
+        
+        System.arraycopy(tmp, index+1, ids, from, tmp.length-(index+1));
+        System.arraycopy(tmp, 0, ids, from+tmp.length-index-1, index);
     }
     
     // Returns the index of the first character that is different in the two 
