@@ -31,6 +31,17 @@ class OmcInfo implements SendDoneUpcaller {
         total.add(t);
         
         System.err.println("broadcast " + id + " took " + t.totalTime());
+        notifyAll();
+    }
+    
+    public synchronized void waitFor(int id) {
+        while (map.containsKey(id)) {
+            try {
+                wait();
+            } catch (Exception e) {
+                //ignore
+            }
+        }
     }
     
     void end() {
@@ -194,11 +205,14 @@ public class Test6 extends TestBase {
                         
         long start = System.currentTimeMillis();
                      
+        int id = -1;
         for (int i=0;i<count;i++) { 
-            int id = omc.send(data);
+            id = omc.send(data);
             info.registerSend(id);
             size += omc.lastSize();
         } 
+        
+        info.waitFor(id); // wait for last ack to come back
         
         long end = System.currentTimeMillis();
 
