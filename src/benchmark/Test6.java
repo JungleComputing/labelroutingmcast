@@ -12,17 +12,17 @@ import mcast.object.SendDoneUpcaller;
 
 class OmcInfo implements SendDoneUpcaller {
 
-    HashMap<Integer, Timer> map = new HashMap<Integer, Timer>();
+    HashMap map = new HashMap();
     Timer total = Timer.createTimer();
     
     synchronized void registerSend(int id) {
         Timer t = Timer.createTimer();
-        map.put(id, t);
+        map.put(new Integer(id), t);
         t.start();
     }
     
     public synchronized void sendDone(int id) {
-        Timer t = map.remove(id);
+        Timer t = (Timer) map.remove(new Integer(id));
         if(t == null) {
             System.err.println("got upcall for unknow id: " + id);
 //            System.exit(1);
@@ -35,7 +35,8 @@ class OmcInfo implements SendDoneUpcaller {
     }
     
     public synchronized void waitFor(int id) {
-        while (map.containsKey(id)) {
+        Integer iid = new Integer(id);
+        while (map.containsKey(iid)) {
             try {
                 wait();
             } catch (Exception e) {
