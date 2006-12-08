@@ -1,6 +1,5 @@
 package benchmark;
 
-import ibis.ipl.IbisException;
 import ibis.ipl.IbisIdentifier;
 import ibis.util.Timer;
 
@@ -112,11 +111,11 @@ public class Test6 extends TestBase {
         }         
     }
             
-    private Test6() throws IbisException, IOException, ClassNotFoundException {         
+    private Test6() throws IOException, ClassNotFoundException {         
         super();
     } 
     
-    public void init() throws IOException, IbisException {
+    public void init() throws IOException {
         info = new OmcInfo();
         omc = new ObjectMulticaster(ibis, true /* efficient multi-cluster */, false, "test", info);
     }

@@ -1,7 +1,6 @@
 package mcast.lrm;
 
 import ibis.ipl.Ibis;
-import ibis.ipl.IbisException;
 import ibis.ipl.IbisIdentifier;
 import ibis.ipl.PortType;
 import ibis.ipl.ReadMessage;
@@ -63,12 +62,12 @@ public class LableRoutingMulticast extends Thread implements Upcall {
     private MessageQueue sendQueue = new MessageQueue(QUEUE_SIZE);
       
     public LableRoutingMulticast(Ibis ibis, MessageReceiver m, MessageCache c, 
-            String name) throws IOException, IbisException {
+            String name) throws IOException {
         this(ibis, m, c, false, name);
     }
             
     public LableRoutingMulticast(Ibis ibis, MessageReceiver m, MessageCache c, 
-            boolean changeOrder, String name) throws IOException, IbisException {
+            boolean changeOrder, String name) throws IOException {
         this.ibis = ibis;    
         this.receiver = m;
         this.name = name;
@@ -79,7 +78,11 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         s.add("Serialization", "data");
         s.add("Communication", "ManyToOne, Reliable, AutoUpcalls");
         
-        portType = ibis.createPortType("Ring", s);
+        try {
+            portType = ibis.createPortType("Ring", s);
+        } catch(Throwable e) {
+            throw new IOException("Could not create port type" + e);
+        }
 
         s = ibis.properties();
         hasLocalReceivePorts = s.isProp("communication", "LocalReceivePorts");

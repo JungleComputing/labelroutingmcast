@@ -44,7 +44,7 @@ public abstract class TestBase implements ResizeHandler {
     
     protected IbisIdentifier [] destinations;
     
-    protected TestBase() throws IbisException, IOException, ClassNotFoundException { 
+    protected TestBase() throws IOException, ClassNotFoundException { 
         StaticProperties s = new StaticProperties();
         s.add("Serialization", "data");
         s.add("Communication", "ManyToOne, Reliable, AutoUpcalls");
@@ -55,7 +55,13 @@ public abstract class TestBase implements ResizeHandler {
             s.add("Worldmodel", "open");
         }
 
-        ibis = Ibis.createIbis(s, this);
+        try {
+            ibis = Ibis.createIbis(s, this);
+        } catch(Throwable e) {
+            System.out.println("Could not create Ibis!");
+            e.printStackTrace();
+            System.exit(1);
+        }
         
         System.err.println("Ibis created!");
                 
@@ -64,7 +70,7 @@ public abstract class TestBase implements ResizeHandler {
         ibis.enableResizeUpcalls();
     }
     
-    public abstract void init() throws IOException, IbisException; 
+    public abstract void init() throws IOException; 
     
     protected void waitForEnoughMachines() { 
         

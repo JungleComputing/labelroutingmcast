@@ -1,6 +1,5 @@
 package benchmark;
 
-import ibis.ipl.IbisException;
 import ibis.ipl.IbisIdentifier;
 
 import java.io.IOException;
@@ -33,11 +32,11 @@ public class Test1 extends TestBase implements MessageReceiver {
     
     private byte [] data;
         
-    private Test1() throws IbisException, IOException, ClassNotFoundException {      
+    private Test1() throws IOException, ClassNotFoundException {      
         super();
     } 
     
-    public void init() throws IOException, IbisException {
+    public void init() throws IOException {
         cache = new MessageCache(cacheSize, 8*1024);        
         lrmcast = new LableRoutingMulticast(ibis, this, cache, autoSort, "test");        
     }

@@ -25,11 +25,11 @@ public class Test4 extends TestBase {
     
     private DoubleData data;
     
-    private Test4() throws IbisException, IOException, ClassNotFoundException {         
+    private Test4() throws IOException, ClassNotFoundException {         
         super();
     } 
     
-    public void init() throws IOException, IbisException {
+    public void init() throws IOException {
         omc = new ObjectMulticaster(ibis, false, signal, "test");
     }
     

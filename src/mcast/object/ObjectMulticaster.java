@@ -5,7 +5,6 @@ import ibis.io.SerializationInput;
 import ibis.io.SerializationOutput;
 
 import ibis.ipl.Ibis;
-import ibis.ipl.IbisException;
 import ibis.ipl.IbisIdentifier;
 
 import ibis.util.TypedProperties;
@@ -57,17 +56,17 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     private final SendDoneUpcaller sendDoneUpcaller;
 
     public ObjectMulticaster(Ibis ibis, String name) 
-        throws IOException, IbisException {       
+        throws IOException {       
         this(ibis, false, false, name, null);
     }
     
     public ObjectMulticaster(Ibis ibis, boolean changeOrder, boolean signal, 
-            String name) throws IOException, IbisException {
+            String name) throws IOException {
         this(ibis, changeOrder, signal, name, null);
     }
 
     public ObjectMulticaster(Ibis ibis, boolean changeOrder, boolean signal, 
-            String name, SendDoneUpcaller s) throws IOException, IbisException {
+            String name, SendDoneUpcaller s) throws IOException {
                 
         this.sendDoneUpcaller = s;
         this.signal = signal;

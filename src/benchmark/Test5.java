@@ -1,6 +1,5 @@
 package benchmark;
 
-import ibis.ipl.IbisException;
 import ibis.ipl.IbisIdentifier;
 
 import java.io.IOException;
@@ -68,11 +67,11 @@ public class Test5 extends TestBase {
         }         
     }
             
-    private Test5() throws IbisException, IOException, ClassNotFoundException {         
+    private Test5() throws IOException, ClassNotFoundException {         
         super();
     } 
     
-    public void init() throws IOException, IbisException {
+    public void init() throws IOException {
         omc = new ObjectMulticaster(ibis, "test");
     }
     
