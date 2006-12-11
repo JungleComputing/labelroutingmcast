@@ -57,8 +57,6 @@ public class LableRoutingMulticast extends Thread implements Upcall {
    
     private long bytes = 0;
 
-    private boolean hasLocalReceivePorts;
-    
     private MessageQueue sendQueue = new MessageQueue(QUEUE_SIZE);
       
     public LableRoutingMulticast(Ibis ibis, MessageReceiver m, MessageCache c, 
@@ -85,14 +83,8 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         }
 
         s = ibis.properties();
-        hasLocalReceivePorts = s.isProp("communication", "LocalReceivePorts");
         
-        if (hasLocalReceivePorts) {
-            logger.info("Using local receiveports");
-            receive = portType.createLocalReceivePort("Ring-" + name, this);
-        } else {
-            receive = portType.createReceivePort("Ring-" + name + "-" + ibis.identifier().name(), this);
-        }
+        receive = portType.createReceivePort("Ring-" + name, this);
         receive.enableConnections();
         receive.enableUpcalls();
                               
@@ -161,30 +153,12 @@ public class LableRoutingMulticast extends Thread implements Upcall {
                 ibisID = (IbisIdentifier) ibisList.get(id); 
 
                 if (ibisID != null) {
-                    if (hasLocalReceivePorts) {
-                        if (ibisID != null) {
-                            sp.connect(ibisID, "Ring-" + name, 10000);
-                            sendports.put(id, sp);
-                        } else {
-                            logger.info("No Ibis yet at position " + id);
-                            failed = true;
-                        }
+                    if (ibisID != null) {
+                        sp.connect(ibisID, "Ring-" + name, 10000);
+                        sendports.put(id, sp);
                     } else {
-                        tmp = ibis.registry().lookupReceivePort("Ring-" + name + "-" 
-                                + ibisID.name(), 10000);
-
-                        if (finish) {
-                            return null;
-                        }
-                        
-                        if (tmp != null) {                 
-                            sp.connect(tmp, 10000);                
-                            sendports.put(id, sp);
-                        } else {
-                            logger.info("Lookup of port " + 
-                                "Ring-" + name + "-"+ ibisID.name() + "failed!");
-                            failed = true;
-                        }
+                        logger.info("No Ibis yet at position " + id);
+                        failed = true;
                     }
                 } else {
                     logger.info("No Ibis yet at position " + id);
@@ -201,8 +175,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
                                 
                 // notify the nameserver that this machine may be dead...
                 try { 
-                    if (ibisID != null
-                            && (tmp != null || hasLocalReceivePorts)) { 
+                    if (ibisID != null) {
                         ibis.registry().maybeDead(ibisID);
                     } 
                     diedmachines.put(id, new Long(System.currentTimeMillis()));                    
