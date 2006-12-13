@@ -3,10 +3,9 @@ package mcast.util;
 import java.util.Comparator;
 import java.util.Arrays;
 
-
 import ibis.ipl.IbisIdentifier;
 
-public class IbisSorter implements Comparator {
+public class IbisSorter implements Comparator<IbisIdentifier> {
 
     // General sorter to use when no cluster order is preferred. 
     private static final IbisSorter sorter = new IbisSorter("unknown", null); 
@@ -37,9 +36,9 @@ public class IbisSorter implements Comparator {
 /*
         IbisSorter tmp = sorter;
         
-        if (!local.name().equals(sorter.preferredName) ||
+        if (!local.equals(sorter.preferredName) ||
                 !local.cluster().equals(sorter.preferredCluster)) {            
-            tmp = new IbisSorter(local.cluster(), local.name());
+            tmp = new IbisSorter(local.cluster(), local);
         }
         
         Arrays.sort(ids, from, to, tmp);
@@ -85,11 +84,8 @@ public class IbisSorter implements Comparator {
         return s1.length();
     }
         
-    public int compare(Object o1, Object o2) {
+    public int compare(IbisIdentifier id1, IbisIdentifier id2) {
 
-        IbisIdentifier id1 = (IbisIdentifier) o1;
-        IbisIdentifier id2 = (IbisIdentifier) o2;
-        
         String cluster1 = id1.cluster();
         String cluster2 = id2.cluster();
         
@@ -107,7 +103,7 @@ public class IbisSorter implements Comparator {
             // machine with the sender to be first (which isn't that simple!). 
             
             if (preferredName == null) { 
-                return id1.name().compareTo(id2.name());
+                return id1.toString().compareTo(id2.toString());
             } else {
                 // Figure out if one of the two strings has a longer prefix 
                 // in common with 'preferredName'. Note that this will result 
@@ -115,15 +111,15 @@ public class IbisSorter implements Comparator {
                 // actually contains the 'preferredName'. Therefore, this 
                 // IbisIdentifier will end up at the first position of the 
                 // array, which is exactly what we want.  
-                int d1 = firstDifference(preferredName, id1.name());
-                int d2 = firstDifference(preferredName, id2.name());
+                int d1 = firstDifference(preferredName, id1.toString());
+                int d2 = firstDifference(preferredName, id2.toString());
                 
                 // If both have the same distance, we sort them alphabetically.
                 // Otherwise, we prefer the one that is closest to 
                 // 'preferredName', since these may actually be located on the 
                 // same machine.  
                 if (d1 == d2) { 
-                    return id1.name().compareTo(id2.name());
+                    return id1.toString().compareTo(id2.toString());
                 } else if (d1 <= d2) { 
                     return 1;
                 } else { 

@@ -29,6 +29,7 @@
                 srcdir="${srcdir}"
                 debug="true"
 		includes="**/*.java">
+		<compilerarg value="-Xlint:unchecked"/>
 		<classpath refid="external.classpath"/>
 	</javac>
 

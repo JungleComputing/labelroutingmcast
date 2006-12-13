@@ -37,7 +37,7 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     private SerializationInput sin;    
           
     private final boolean signal;
-    private final LinkedList objects = new LinkedList();
+    private final LinkedList<Object> objects = new LinkedList<Object>();
     
     private long totalData = 0;
     private long lastBytesWritten = 0;

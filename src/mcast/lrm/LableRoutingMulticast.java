@@ -49,7 +49,8 @@ public class LableRoutingMulticast extends Thread implements Upcall {
     
     private short [] destinations = null;
     
-    private HashMap knownIbis = new HashMap();
+    private HashMap<IbisIdentifier, Short> knownIbis
+            = new HashMap<IbisIdentifier, Short>();
     private DynamicObjectArray ibisList = new DynamicObjectArray();
         
     private short nextIbisID = 0;
@@ -279,7 +280,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
 
     public synchronized void removeIbis(IbisIdentifier ibis) {
                 
-        Short tmp = (Short) knownIbis.remove(ibis);
+        Short tmp = knownIbis.remove(ibis);
         
         if (tmp != null) {
             logger.info("Removing ibis " + tmp.shortValue() + " " + ibis);
@@ -289,7 +290,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
 
     private synchronized short getIbisID(IbisIdentifier ibis) {
         
-        Short s = (Short) knownIbis.get(ibis);
+        Short s = knownIbis.get(ibis);
         
         if (s != null) { 
             return s.shortValue();
@@ -311,7 +312,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         
         for (int i=0;i<destinations.length;i++) { 
             this.destinations[i] = getIbisID(destinations[i]);            
-            logger.debug("  " + i + " (" + destinations[i].name() + " at " 
+            logger.debug("  " + i + " (" + destinations[i] + " at " 
                   + destinations[i].cluster() + ") -> " + this.destinations[i]);
         }
     }

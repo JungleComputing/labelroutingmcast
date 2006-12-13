@@ -22,7 +22,7 @@ public class LRMCInputStream extends InputStream {
 
     private final ObjectReceiver receiver;
     
-    private final ArrayList queue = new ArrayList();
+    private final ArrayList<Message> queue = new ArrayList<Message>();
     
     private Message current = null; 
     
@@ -105,7 +105,7 @@ public class LRMCInputStream extends InputStream {
                 current = null;
                 return;
             }
-            current = (Message) queue.remove(0);        
+            current = queue.remove(0);        
         }
 
         index = 0;

@@ -39,7 +39,8 @@ public abstract class TestBase implements ResizeHandler {
     protected Ibis ibis;
     protected IbisIdentifier masterID;         
     
-    protected ArrayList participants = new ArrayList();    
+    protected ArrayList<IbisIdentifier> participants
+            = new ArrayList<IbisIdentifier>();    
     protected boolean participantsChanged = false;
     
     protected IbisIdentifier [] destinations;
@@ -139,11 +140,11 @@ public abstract class TestBase implements ResizeHandler {
             }    
 
             if (verbose) {
-                System.err.println("Sending from " + ibis.identifier().name() + " / "
+                System.err.println("Sending from " + ibis.identifier() + " / "
                         + ibis.identifier().cluster() + " to ");
                 
                 for (int i=0;i<destinations.length;i++) { 
-                    System.err.println( destinations[i].name() + " / "
+                    System.err.println( destinations[i] + " / "
                             + destinations[i].cluster());                         
                 }
             }

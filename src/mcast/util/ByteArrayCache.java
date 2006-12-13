@@ -6,7 +6,7 @@ public class ByteArrayCache {
     
     private static final int DEFAULT_MAX = 100;
 
-    private LinkedList cache = new LinkedList();
+    private LinkedList<byte[]> cache = new LinkedList<byte[]>();
     
     private final int maxSize; 
     private final int arraySize;
@@ -28,7 +28,7 @@ public class ByteArrayCache {
     
     public synchronized byte [] get(int len) {        
         if (len <= arraySize && cache.size() > 0) {
-            return (byte []) cache.removeLast();
+            return cache.removeLast();
         }
         
         return new byte[len];
