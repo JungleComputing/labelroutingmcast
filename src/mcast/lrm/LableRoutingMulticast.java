@@ -78,7 +78,7 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         s.add("Communication", "ManyToOne, Reliable, AutoUpcalls");
         
         try {
-            portType = ibis.createPortType("Ring", s);
+            portType = ibis.createPortType(s);
         } catch(Throwable e) {
             throw new IOException("Could not create port type" + e);
         }
