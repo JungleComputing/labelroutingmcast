@@ -57,7 +57,7 @@ public abstract class TestBase implements ResizeHandler {
         }
 
         try {
-            ibis = Ibis.createIbis(s, this);
+            ibis = IbisFactory.createIbis(s, this);
         } catch(Throwable e) {
             System.out.println("Could not create Ibis!");
             e.printStackTrace();
