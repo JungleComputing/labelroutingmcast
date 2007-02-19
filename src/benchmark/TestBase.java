@@ -20,8 +20,8 @@ import ibis.ipl.*;
  * @version 1.0 May 9, 2006
  * @since 1.0
  */
-public abstract class TestBase implements ResizeHandler {
-       
+public abstract class TestBase implements ResizeHandler, IbisCapabilities {
+
     protected static int minMachines = 1;
     
     protected static int size = 32*1024;
@@ -46,18 +46,12 @@ public abstract class TestBase implements ResizeHandler {
     protected IbisIdentifier [] destinations;
     
     protected TestBase() throws IOException, ClassNotFoundException { 
-        StaticProperties s = new StaticProperties();
-        s.add("Serialization", "data");
-        s.add("Communication", "ManyToOne, Reliable, AutoUpcalls");
+        Capabilities s = new Capabilities(new String[] {
+            closed ? WORLD_CLOSED : WORLD_OPEN,
+            SER_DATA, COMM_RELIABLE, CONN_MANYTOONE, RECV_AUTOUPCALLS});
         
-        if (closed) { 
-            s.add("Worldmodel", "closed");
-        } else { 
-            s.add("Worldmodel", "open");
-        }
-
         try {
-            ibis = IbisFactory.createIbis(s, this);
+            ibis = IbisFactory.createIbis(s, null, null, this);
         } catch(Throwable e) {
             System.out.println("Could not create Ibis!");
             e.printStackTrace();

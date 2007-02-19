@@ -1,5 +1,6 @@
 package mcast.lrm;
 
+import ibis.ipl.Capabilities;
 import ibis.ipl.Ibis;
 import ibis.ipl.IbisIdentifier;
 import ibis.ipl.PortType;
@@ -7,7 +8,6 @@ import ibis.ipl.ReadMessage;
 import ibis.ipl.ReceivePort;
 import ibis.ipl.ReceivePortIdentifier;
 import ibis.ipl.SendPort;
-import ibis.ipl.StaticProperties;
 import ibis.ipl.Upcall;
 import ibis.ipl.WriteMessage;
 
@@ -22,7 +22,8 @@ import mcast.util.IbisSorter;
 
 import org.apache.log4j.Logger;
 
-public class LableRoutingMulticast extends Thread implements Upcall {
+public class LableRoutingMulticast extends Thread implements Upcall,
+        ibis.ipl.IbisCapabilities {
 
     private final static int ZOMBIE_THRESHOLD = 10000;
 
@@ -73,18 +74,14 @@ public class LableRoutingMulticast extends Thread implements Upcall {
         this.cache = c;
         this.changeOrder = changeOrder;
 
-        StaticProperties s = new StaticProperties();
-        s.add("Serialization", "data");
-        s.add("Communication", "ManyToOne, Reliable, AutoUpcalls");
-        
+        Capabilities s = new Capabilities(new String[] {
+            SER_DATA, COMM_RELIABLE, CONN_MANYTOONE, RECV_AUTOUPCALLS});
         try {
             portType = ibis.createPortType(s);
         } catch(Throwable e) {
             throw new IOException("Could not create port type" + e);
         }
 
-        s = ibis.properties();
-        
         receive = portType.createReceivePort("Ring-" + name, this);
         receive.enableConnections();
         receive.enableUpcalls();
