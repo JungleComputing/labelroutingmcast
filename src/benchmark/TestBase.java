@@ -20,7 +20,8 @@ import ibis.ipl.*;
  * @version 1.0 May 9, 2006
  * @since 1.0
  */
-public abstract class TestBase implements ResizeHandler, IbisCapabilities {
+public abstract class TestBase implements ResizeHandler,
+        PredefinedCapabilities {
 
     protected static int minMachines = 1;
     
@@ -46,9 +47,9 @@ public abstract class TestBase implements ResizeHandler, IbisCapabilities {
     protected IbisIdentifier [] destinations;
     
     protected TestBase() throws IOException, ClassNotFoundException { 
-        Capabilities s = new Capabilities(new String[] {
+        CapabilitySet s = new CapabilitySet(
             closed ? WORLD_CLOSED : WORLD_OPEN,
-            SER_DATA, COMM_RELIABLE, CONN_MANYTOONE, RECV_AUTOUPCALLS});
+            SER_DATA, COMM_RELIABLE, CONN_MANYTOONE, RECV_AUTOUPCALLS);
         
         try {
             ibis = IbisFactory.createIbis(s, null, null, this);
@@ -135,11 +136,11 @@ public abstract class TestBase implements ResizeHandler, IbisCapabilities {
 
             if (verbose) {
                 System.err.println("Sending from " + ibis.identifier() + " / "
-                        + ibis.identifier().cluster() + " to ");
+                        + ibis.identifier().getLocation().cluster() + " to ");
                 
                 for (int i=0;i<destinations.length;i++) { 
                     System.err.println( destinations[i] + " / "
-                            + destinations[i].cluster());                         
+                            + destinations[i].getLocation().cluster());                         
                 }
             }
         } 

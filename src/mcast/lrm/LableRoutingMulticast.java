@@ -1,6 +1,6 @@
 package mcast.lrm;
 
-import ibis.ipl.Capabilities;
+import ibis.ipl.CapabilitySet;
 import ibis.ipl.Ibis;
 import ibis.ipl.IbisIdentifier;
 import ibis.ipl.PortType;
@@ -23,7 +23,7 @@ import mcast.util.IbisSorter;
 import org.apache.log4j.Logger;
 
 public class LableRoutingMulticast extends Thread implements Upcall,
-        ibis.ipl.IbisCapabilities {
+        ibis.ipl.PredefinedCapabilities {
 
     private final static int ZOMBIE_THRESHOLD = 10000;
 
@@ -74,8 +74,8 @@ public class LableRoutingMulticast extends Thread implements Upcall,
         this.cache = c;
         this.changeOrder = changeOrder;
 
-        Capabilities s = new Capabilities(new String[] {
-            SER_DATA, COMM_RELIABLE, CONN_MANYTOONE, RECV_AUTOUPCALLS});
+        CapabilitySet s = new CapabilitySet(
+            SER_DATA, COMM_RELIABLE, CONN_MANYTOONE, RECV_AUTOUPCALLS);
         try {
             portType = ibis.createPortType(s);
         } catch(Throwable e) {
@@ -310,7 +310,7 @@ public class LableRoutingMulticast extends Thread implements Upcall,
         for (int i=0;i<destinations.length;i++) { 
             this.destinations[i] = getIbisID(destinations[i]);            
             logger.debug("  " + i + " (" + destinations[i] + " at " 
-                  + destinations[i].cluster() + ") -> " + this.destinations[i]);
+                  + destinations[i].getLocation().cluster() + ") -> " + this.destinations[i]);
         }
     }
     
