@@ -29,9 +29,6 @@ public final class BufferedArrayOutputStream extends DataOutputStream {
     
     private static boolean DEBUG = false;
     
-    /** Size of the buffer in which output data is collected. */
-    private static final int BUF_SIZE = ObjectMulticaster.MESSAGE_SIZE;
-
     /** The underlying <code>OutputStream</code>. */
     private LRMCOutputStream out;
 
@@ -47,13 +44,18 @@ public final class BufferedArrayOutputStream extends DataOutputStream {
     /** Object used for conversion of primitive types to bytes. */
     private Conversion conversion;
 
+    /** Size of the buffer in which output data is collected. */
+    private final int BUF_SIZE;
+
     /**
      * Constructor.
      * @param out	the underlying <code>OutputStream</code>
+     * @param bufsz	the buffer size.
      */
-    public BufferedArrayOutputStream(LRMCOutputStream out) {
+    public BufferedArrayOutputStream(LRMCOutputStream out, int bufsz) {
         this.out = out;
         this.buffer = out.getBuffer();
+        this.BUF_SIZE = bufsz;
         conversion = Conversion.loadConversion(false);
     }
 

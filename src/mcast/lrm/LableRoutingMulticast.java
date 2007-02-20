@@ -12,7 +12,6 @@ import ibis.ipl.Upcall;
 import ibis.ipl.WriteMessage;
 
 import ibis.util.GetLogger;
-import ibis.util.TypedProperties;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -29,8 +28,6 @@ public class LableRoutingMulticast extends Thread implements Upcall,
 
     private static final Logger logger
             = GetLogger.getLogger(LableRoutingMulticast.class.getName());
-    private static final int QUEUE_SIZE
-            = TypedProperties.intProperty("lrmc.queueSize", 32);
 
     private final Ibis ibis;
     private final PortType portType;    
@@ -59,7 +56,7 @@ public class LableRoutingMulticast extends Thread implements Upcall,
    
     private long bytes = 0;
 
-    private MessageQueue sendQueue = new MessageQueue(QUEUE_SIZE);
+    private MessageQueue sendQueue;
       
     public LableRoutingMulticast(Ibis ibis, MessageReceiver m, MessageCache c, 
             String name) throws IOException {
@@ -73,7 +70,8 @@ public class LableRoutingMulticast extends Thread implements Upcall,
         this.name = name;
         this.cache = c;
         this.changeOrder = changeOrder;
-
+        this.sendQueue = new MessageQueue(ibis.attributes().getIntProperty(
+                    "lrmc.queueSize", 32));
         CapabilitySet s = new CapabilitySet(
             SER_DATA, COMM_RELIABLE, CONN_MANYTOONE, RECV_AUTOUPCALLS);
         try {

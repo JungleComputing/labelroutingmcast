@@ -7,7 +7,6 @@ import ibis.io.SerializationOutput;
 import ibis.ipl.Ibis;
 import ibis.ipl.IbisIdentifier;
 
-import ibis.util.TypedProperties;
 
 import java.io.IOException;
 
@@ -20,11 +19,9 @@ import mcast.lrm.MessageReceiver;
 
 public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
 
-    public static final int MESSAGE_SIZE
-        = TypedProperties.intProperty("lrmc.messageSize", 8 * 1024);
+    private final int MESSAGE_SIZE;
    
-    public static final int MESSAGE_CACHE_SIZE
-        = TypedProperties.intProperty("lrmc.messageCacheSize", 1500);
+    private final int MESSAGE_CACHE_SIZE;
     
     private LableRoutingMulticast lrmc; 
     
@@ -70,6 +67,10 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
                 
         this.sendDoneUpcaller = s;
         this.signal = signal;
+        this.MESSAGE_SIZE = ibis.attributes().getIntProperty(
+                "lrmc.messageSize", 8 * 1024);
+        this.MESSAGE_CACHE_SIZE = ibis.attributes().getIntProperty(
+                "lrmc.messageCacheSize", 1500);
         
         cache = new MessageCache(MESSAGE_CACHE_SIZE, MESSAGE_SIZE);
                 
@@ -77,7 +78,7 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
         
         os = new LRMCOutputStream(lrmc, cache);
 
-        bout = new BufferedArrayOutputStream(os);
+        bout = new BufferedArrayOutputStream(os, MESSAGE_SIZE);
         bin = new BufferedArrayInputStream(null);
         
         sout = SerializationBase.createSerializationOutput("ibis", bout);
