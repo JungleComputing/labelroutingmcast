@@ -8,6 +8,7 @@ import ibis.ipl.ReadMessage;
 import ibis.ipl.ReceivePort;
 import ibis.ipl.ReceivePortIdentifier;
 import ibis.ipl.SendPort;
+import ibis.ipl.TypedProperties;
 import ibis.ipl.Upcall;
 import ibis.ipl.WriteMessage;
 
@@ -70,10 +71,12 @@ public class LableRoutingMulticast extends Thread implements Upcall,
         this.name = name;
         this.cache = c;
         this.changeOrder = changeOrder;
-        this.sendQueue = new MessageQueue(ibis.attributes().getIntProperty(
+        this.sendQueue = new MessageQueue(
+                new TypedProperties(ibis.attributes()).getIntProperty(
                     "lrmc.queueSize", 32));
         CapabilitySet s = new CapabilitySet(
-            SER_DATA, COMM_RELIABLE, CONN_MANYTOONE, RECV_AUTOUPCALLS);
+                SERIALIZATION_DATA, COMMUNICATION_RELIABLE,
+                CONNECTION_MANY_TO_ONE, RECEIVE_AUTO_UPCALLS);
         try {
             portType = ibis.createPortType(s);
         } catch(Throwable e) {

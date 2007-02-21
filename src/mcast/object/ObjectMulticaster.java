@@ -6,6 +6,7 @@ import ibis.io.SerializationOutput;
 
 import ibis.ipl.Ibis;
 import ibis.ipl.IbisIdentifier;
+import ibis.ipl.TypedProperties;
 
 
 import java.io.IOException;
@@ -64,13 +65,12 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
 
     public ObjectMulticaster(Ibis ibis, boolean changeOrder, boolean signal, 
             String name, SendDoneUpcaller s) throws IOException {
-                
+        TypedProperties tp = new TypedProperties(ibis.attributes());
         this.sendDoneUpcaller = s;
         this.signal = signal;
-        this.MESSAGE_SIZE = ibis.attributes().getIntProperty(
-                "lrmc.messageSize", 8 * 1024);
-        this.MESSAGE_CACHE_SIZE = ibis.attributes().getIntProperty(
-                "lrmc.messageCacheSize", 1500);
+        this.MESSAGE_SIZE = tp.getIntProperty("lrmc.messageSize", 8 * 1024);
+        this.MESSAGE_CACHE_SIZE = tp.getIntProperty("lrmc.messageCacheSize",
+                1500);
         
         cache = new MessageCache(MESSAGE_CACHE_SIZE, MESSAGE_SIZE);
                 

@@ -48,8 +48,9 @@ public abstract class TestBase implements ResizeHandler,
     
     protected TestBase() throws IOException, ClassNotFoundException { 
         CapabilitySet s = new CapabilitySet(
-            closed ? WORLD_CLOSED : WORLD_OPEN,
-            SER_DATA, COMM_RELIABLE, CONN_MANYTOONE, RECV_AUTOUPCALLS);
+            closed ? WORLDMODEL_CLOSED : WORLDMODEL_OPEN,
+            SERIALIZATION_DATA, COMMUNICATION_RELIABLE,
+            CONNECTION_MANY_TO_ONE, RECEIVE_AUTO_UPCALLS);
         
         try {
             ibis = IbisFactory.createIbis(s, null, null, this);
