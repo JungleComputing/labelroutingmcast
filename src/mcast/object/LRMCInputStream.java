@@ -1,7 +1,5 @@
 package mcast.object;
 
-import ibis.util.GetLogger;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -16,7 +14,7 @@ import org.apache.log4j.Logger;
 public class LRMCInputStream extends InputStream {
 
     private static final Logger logger
-            = GetLogger.getLogger(LRMCInputStream.class.getName());
+            = Logger.getLogger(LRMCInputStream.class);
     
     private final short source;       
 

@@ -1,7 +1,5 @@
 package mcast.object;
 
-import ibis.util.GetLogger;
-
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -14,7 +12,7 @@ import org.apache.log4j.Logger;
 public class LRMCOutputStream extends OutputStream {
 
     private static final Logger logger
-            = GetLogger.getLogger(LRMCOutputStream.class.getName());
+            = Logger.getLogger(LRMCOutputStream.class);
 
     private final LableRoutingMulticast mcast;
     private final MessageCache cache; 

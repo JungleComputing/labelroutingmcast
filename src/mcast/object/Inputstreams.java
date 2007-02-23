@@ -1,7 +1,5 @@
 package mcast.object;
 
-import ibis.util.GetLogger;
-
 import mcast.lrm.Message;
 import mcast.lrm.MessageCache;
 
@@ -12,7 +10,7 @@ public class Inputstreams {
     private static final int DEFAULT_SIZE = 64;
 
     private static final Logger logger
-            = GetLogger.getLogger(Inputstreams.class.getName());
+            = Logger.getLogger(Inputstreams.class);
 
     private LRMCInputStream[] inputStreams = new LRMCInputStream[DEFAULT_SIZE];
 

@@ -6,8 +6,7 @@ import ibis.io.SerializationOutput;
 
 import ibis.ipl.Ibis;
 import ibis.ipl.IbisIdentifier;
-import ibis.ipl.TypedProperties;
-
+import ibis.util.TypedProperties;
 
 import java.io.IOException;
 
@@ -18,12 +17,28 @@ import mcast.lrm.Message;
 import mcast.lrm.MessageCache;
 import mcast.lrm.MessageReceiver;
 
+import org.apache.log4j.Logger;
+import org.apache.log4j.Level;
+import org.apache.log4j.PatternLayout;
+import org.apache.log4j.WriterAppender;
+
 public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
 
+    static {
+        Logger mcastLogger = Logger.getLogger("mcast");
+        if (!mcastLogger.getAllAppenders().hasMoreElements()) {
+            // No appenders defined, print to standard out by default
+            PatternLayout layout = new PatternLayout("%d{HH:mm:ss} %-5p %m%n");
+            WriterAppender appender = new WriterAppender(layout, System.err);
+            mcastLogger.addAppender(appender);
+            mcastLogger.setLevel(Level.WARN);
+        }
+    }
+
     private final int MESSAGE_SIZE;
-   
+
     private final int MESSAGE_CACHE_SIZE;
-    
+
     private LableRoutingMulticast lrmc; 
     
     private LRMCOutputStream os; 

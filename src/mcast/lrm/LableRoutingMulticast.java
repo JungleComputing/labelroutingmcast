@@ -8,11 +8,10 @@ import ibis.ipl.ReadMessage;
 import ibis.ipl.ReceivePort;
 import ibis.ipl.ReceivePortIdentifier;
 import ibis.ipl.SendPort;
-import ibis.ipl.TypedProperties;
 import ibis.ipl.Upcall;
 import ibis.ipl.WriteMessage;
 
-import ibis.util.GetLogger;
+import ibis.util.TypedProperties;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -28,7 +27,7 @@ public class LableRoutingMulticast extends Thread implements Upcall,
     private final static int ZOMBIE_THRESHOLD = 10000;
 
     private static final Logger logger
-            = GetLogger.getLogger(LableRoutingMulticast.class.getName());
+            = Logger.getLogger(LableRoutingMulticast.class);
 
     private final Ibis ibis;
     private final PortType portType;    
