@@ -80,7 +80,7 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
 
     public ObjectMulticaster(Ibis ibis, boolean changeOrder, boolean signal, 
             String name, SendDoneUpcaller s) throws IOException {
-        TypedProperties tp = new TypedProperties(ibis.attributes());
+        TypedProperties tp = new TypedProperties(ibis.properties());
         this.sendDoneUpcaller = s;
         this.signal = signal;
         this.MESSAGE_SIZE = tp.getIntProperty("lrmc.messageSize", 8 * 1024);

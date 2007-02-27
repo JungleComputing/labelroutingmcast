@@ -71,7 +71,7 @@ public class LableRoutingMulticast extends Thread implements Upcall,
         this.cache = c;
         this.changeOrder = changeOrder;
         this.sendQueue = new MessageQueue(
-                new TypedProperties(ibis.attributes()).getIntProperty(
+                new TypedProperties(ibis.properties()).getIntProperty(
                     "lrmc.queueSize", 32));
         CapabilitySet s = new CapabilitySet(
                 SERIALIZATION_DATA, COMMUNICATION_RELIABLE,
