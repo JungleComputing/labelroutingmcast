@@ -20,7 +20,7 @@ import ibis.ipl.*;
  * @version 1.0 May 9, 2006
  * @since 1.0
  */
-public abstract class TestBase implements ResizeHandler,
+public abstract class TestBase implements RegistryEventHandler,
         PredefinedCapabilities {
 
     protected static int minMachines = 1;
@@ -35,7 +35,6 @@ public abstract class TestBase implements ResizeHandler,
     protected static boolean ring = false;
     protected static boolean verbose = false;        
     protected static boolean signal = false;
-    protected static boolean closed = false;
         
     protected Ibis ibis;
     protected IbisIdentifier masterID;         
@@ -48,7 +47,6 @@ public abstract class TestBase implements ResizeHandler,
     
     protected TestBase() throws IOException, ClassNotFoundException { 
         CapabilitySet s = new CapabilitySet(
-            closed ? WORLDMODEL_CLOSED : WORLDMODEL_OPEN,
             SERIALIZATION_DATA, COMMUNICATION_RELIABLE,
             CONNECTION_MANY_TO_ONE, RECEIVE_AUTO_UPCALLS);
         
@@ -64,7 +62,7 @@ public abstract class TestBase implements ResizeHandler,
                 
         init();
         
-        ibis.enableResizeUpcalls();
+        ibis.enableRegistryEvents();
     }
     
     public abstract void init() throws IOException; 
@@ -229,7 +227,7 @@ public abstract class TestBase implements ResizeHandler,
         left(id);
     }
 
-    public void mustLeave(IbisIdentifier[] id) {
+    public void gotSignal(String s) {
         // ignored
     }
     
@@ -264,9 +262,6 @@ public abstract class TestBase implements ResizeHandler,
             } else if (args[i].equals("-verbose")) {
                 verbose = true;   
                 args[i] = null;
-            } else if (args[i].equals("-closed")) {
-                closed = true;   
-                args[i] = null;            
             } else if (args[i].equals("-signal")) {
                 signal = true;   
                 args[i] = null;
