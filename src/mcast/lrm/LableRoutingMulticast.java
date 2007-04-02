@@ -3,7 +3,6 @@ package mcast.lrm;
 import ibis.ipl.CapabilitySet;
 import ibis.ipl.Ibis;
 import ibis.ipl.IbisIdentifier;
-import ibis.ipl.PortType;
 import ibis.ipl.ReadMessage;
 import ibis.ipl.ReceivePort;
 import ibis.ipl.ReceivePortIdentifier;
@@ -30,7 +29,7 @@ public class LableRoutingMulticast extends Thread implements Upcall,
             = Logger.getLogger(LableRoutingMulticast.class);
 
     private final Ibis ibis;
-    private final PortType portType;    
+    private final CapabilitySet portType;    
     private final String name;
     
     private ReceivePort receive; 
@@ -73,16 +72,11 @@ public class LableRoutingMulticast extends Thread implements Upcall,
         this.sendQueue = new MessageQueue(
                 new TypedProperties(ibis.properties()).getIntProperty(
                     "lrmc.queueSize", 32));
-        CapabilitySet s = new CapabilitySet(
+        portType = new CapabilitySet(
                 SERIALIZATION_DATA, COMMUNICATION_RELIABLE,
                 CONNECTION_MANY_TO_ONE, RECEIVE_AUTO_UPCALLS);
-        try {
-            portType = ibis.createPortType(s);
-        } catch(Throwable e) {
-            throw new IOException("Could not create port type" + e);
-        }
 
-        receive = portType.createReceivePort("Ring-" + name, this);
+        receive = ibis.createReceivePort(portType, "Ring-" + name, this);
         receive.enableConnections();
         receive.enableUpcalls();
                               
@@ -136,7 +130,7 @@ public class LableRoutingMulticast extends Thread implements Upcall,
             IbisIdentifier ibisID = (IbisIdentifier) ibisList.get(id); 
 
             try { 
-                sp = portType.createSendPort();         
+                sp = ibis.createSendPort(portType);         
                 
                 if (ibisID == null) {
                     synchronized(this) {
