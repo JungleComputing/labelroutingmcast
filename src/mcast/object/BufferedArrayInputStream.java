@@ -53,6 +53,10 @@ public final class BufferedArrayInputStream extends DataInputStream {
         this.in = in;
         conversion = Conversion.loadConversion(false);
     }
+
+    public int bufferSize() {
+        return BUF_SIZE;
+    }
     
     public void setInputStream(LRMCInputStream in) { 
         this.in = in;

@@ -59,6 +59,10 @@ public final class BufferedArrayOutputStream extends DataOutputStream {
         conversion = Conversion.loadConversion(false);
     }
 
+    public int bufferSize() {
+        return BUF_SIZE;
+    }
+
     public long bytesWritten() {
         return bytes + index;
     }
