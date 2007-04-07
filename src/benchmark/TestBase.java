@@ -20,8 +20,7 @@ import ibis.ipl.*;
  * @version 1.0 May 9, 2006
  * @since 1.0
  */
-public abstract class TestBase implements RegistryEventHandler,
-        PredefinedCapabilities {
+public abstract class TestBase implements RegistryEventHandler {
 
     protected static int minMachines = 1;
     
@@ -46,12 +45,16 @@ public abstract class TestBase implements RegistryEventHandler,
     protected IbisIdentifier [] destinations;
     
     protected TestBase() throws IOException, ClassNotFoundException { 
-        CapabilitySet s = new CapabilitySet(
-            SERIALIZATION_DATA, COMMUNICATION_RELIABLE,
-            CONNECTION_MANY_TO_ONE, RECEIVE_AUTO_UPCALLS);
+        PortType tp = new PortType(
+            PortType.SERIALIZATION_DATA, PortType.COMMUNICATION_RELIABLE,
+            PortType.CONNECTION_MANY_TO_ONE, PortType.RECEIVE_AUTO_UPCALLS);
+
+        IbisCapabilities s = new IbisCapabilities(
+                IbisCapabilities.WORLDMODEL_OPEN,
+                IbisCapabilities.REGISTRY_UPCALLS);
         
         try {
-            ibis = IbisFactory.createIbis(s, null, null, this);
+            ibis = IbisFactory.createIbis(s, null, this, tp);
         } catch(Throwable e) {
             System.out.println("Could not create Ibis!");
             e.printStackTrace();
