@@ -34,7 +34,7 @@
 	</javac>
 
 
-        <java   classname="ibis.frontend.io.IOGenerator"
+        <java   classname="ibis.util.io.rewriter.IOGenerator"
                 dir="${builddir}"
                 failonerror="true"
                 fork="true">
