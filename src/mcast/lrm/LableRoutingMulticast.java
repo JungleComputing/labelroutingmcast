@@ -5,7 +5,6 @@ import ibis.ipl.IbisIdentifier;
 import ibis.ipl.PortType;
 import ibis.ipl.ReadMessage;
 import ibis.ipl.ReceivePort;
-import ibis.ipl.ReceivePortIdentifier;
 import ibis.ipl.SendPort;
 import ibis.ipl.MessageUpcall;
 import ibis.ipl.WriteMessage;
@@ -124,8 +123,6 @@ public class LableRoutingMulticast extends Thread implements MessageUpcall {
             
             boolean failed = false;
             
-            ReceivePortIdentifier tmp = null; 
-
             IbisIdentifier ibisID = (IbisIdentifier) ibisList.get(id); 
 
             try { 
