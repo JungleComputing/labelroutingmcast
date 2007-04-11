@@ -255,7 +255,7 @@ public class LableRoutingMulticast extends Thread implements MessageUpcall {
             
             logger.info("Adding Ibis " + nextIbisID + " " + ibis);
                                     
-            if (ibis.equals(this.ibis.identifier())) {                
+            if (ibis.equals(this.ibis.ibisIdentifier())) {                
                 logger.info("I am " + nextIbisID + " " + ibis);
                 myID = nextIbisID;
             }
@@ -292,7 +292,7 @@ public class LableRoutingMulticast extends Thread implements MessageUpcall {
         if (changeOrder) { 
             // We are allowed to change the order of machines in the destination
             // array. This can be used to make the mcast 'cluster aware'.  
-            IbisSorter.sort(ibis.identifier(), destinations);                     
+            IbisSorter.sort(ibis.ibisIdentifier(), destinations);                     
         }
         
         this.destinations = new short[destinations.length];
@@ -300,7 +300,7 @@ public class LableRoutingMulticast extends Thread implements MessageUpcall {
         for (int i=0;i<destinations.length;i++) { 
             this.destinations[i] = getIbisID(destinations[i]);            
             logger.debug("  " + i + " (" + destinations[i] + " at " 
-                  + destinations[i].getLocation().cluster() + ") -> " + this.destinations[i]);
+                  + destinations[i].getLocation().getCluster() + ") -> " + this.destinations[i]);
         }
     }
     

@@ -43,7 +43,7 @@ public class Test2 extends TestBase {
 
         waitForMaster();        
         
-        if (masterID.equals(ibis.identifier())) {         
+        if (masterID.equals(ibis.ibisIdentifier())) {         
             
             waitForEnoughMachines();
             

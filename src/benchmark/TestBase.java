@@ -118,31 +118,31 @@ public abstract class TestBase implements RegistryEventHandler {
                 
                 IbisIdentifier tmp = (IbisIdentifier) participants.get(i);
                 
-                if (!tmp.equals(ibis.identifier())) { 
+                if (!tmp.equals(ibis.ibisIdentifier())) { 
                     destinations[index++] = tmp;
                 } 
             }
             
             if (sortOnce) { 
                 if (ring) {                 
-                    IbisSorter.sort(ibis.identifier(), destinations, 0, 
+                    IbisSorter.sort(ibis.ibisIdentifier(), destinations, 0, 
                             destinations.length-1);
                 } else { 
-                    IbisSorter.sort(ibis.identifier(), destinations);
+                    IbisSorter.sort(ibis.ibisIdentifier(), destinations);
                 }                
             }
             
             if (ring) { 
-                destinations[index] = ibis.identifier();
+                destinations[index] = ibis.ibisIdentifier();
             }    
 
             if (verbose) {
-                System.err.println("Sending from " + ibis.identifier() + " / "
-                        + ibis.identifier().getLocation().cluster() + " to ");
+                System.err.println("Sending from " + ibis.ibisIdentifier() + " / "
+                        + ibis.ibisIdentifier().getLocation().getCluster() + " to ");
                 
                 for (int i=0;i<destinations.length;i++) { 
                     System.err.println( destinations[i] + " / "
-                            + destinations[i].getLocation().cluster());                         
+                            + destinations[i].getLocation().getCluster());                         
                 }
             }
         } 
