@@ -300,7 +300,7 @@ public class LableRoutingMulticast extends Thread implements MessageUpcall {
         for (int i=0;i<destinations.length;i++) { 
             this.destinations[i] = getIbisID(destinations[i]);            
             logger.debug("  " + i + " (" + destinations[i] + " at " 
-                  + destinations[i].getLocation().getCluster() + ") -> " + this.destinations[i]);
+                  + destinations[i].location().getCluster() + ") -> " + this.destinations[i]);
         }
     }
     

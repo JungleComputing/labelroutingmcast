@@ -86,8 +86,8 @@ public class IbisSorter implements Comparator<IbisIdentifier> {
         
     public int compare(IbisIdentifier id1, IbisIdentifier id2) {
 
-        String cluster1 = id1.getLocation().getCluster();
-        String cluster2 = id2.getLocation().getCluster();
+        String cluster1 = id1.location().getCluster();
+        String cluster2 = id2.location().getCluster();
         
         if (cluster1.equals(cluster2)) { 
             // The clusters are identical, so the order depends completely 
