@@ -45,7 +45,7 @@ public class Test4 extends TestBase {
 
         waitForMaster();        
         
-        if (masterID.equals(ibis.ibisIdentifier())) {         
+        if (masterID.equals(ibis.identifier())) {         
             
             // Create the data object
             data = new DoubleData(size);                        

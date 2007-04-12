@@ -45,7 +45,7 @@ public class Test1 extends TestBase implements MessageReceiver {
 
         waitForMaster();        
         
-        if (masterID.equals(ibis.ibisIdentifier())) {         
+        if (masterID.equals(ibis.identifier())) {         
      
             waitForEnoughMachines();
             
@@ -61,7 +61,7 @@ public class Test1 extends TestBase implements MessageReceiver {
             waitForMasterToLeave();            
         }
         
-        System.out.println("Machine " + ibis.ibisIdentifier() + " received " 
+        System.out.println("Machine " + ibis.identifier() + " received " 
                 + receivedMessages + " messages");
         
         lrmcast.done();
