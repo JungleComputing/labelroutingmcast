@@ -65,7 +65,7 @@ public abstract class TestBase implements RegistryEventHandler {
                 
         init();
         
-        ibis.enableRegistryEvents();
+        ibis.registry().enableEvents();
     }
     
     public abstract void init() throws IOException; 
