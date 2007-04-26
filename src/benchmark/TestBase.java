@@ -138,11 +138,11 @@ public abstract class TestBase implements RegistryEventHandler {
 
             if (verbose) {
                 System.err.println("Sending from " + ibis.identifier() + " / "
-                        + ibis.identifier().location().getCluster() + " to ");
+                        + ibis.identifier().location().getParent() + " to ");
                 
                 for (int i=0;i<destinations.length;i++) { 
                     System.err.println( destinations[i] + " / "
-                            + destinations[i].location().getCluster());                         
+                            + destinations[i].location().getParent());                         
                 }
             }
         } 

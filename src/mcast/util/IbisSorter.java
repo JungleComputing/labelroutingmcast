@@ -1,5 +1,7 @@
 package mcast.util;
 
+import ibis.ipl.Location;
+
 import java.util.Comparator;
 import java.util.Arrays;
 
@@ -86,8 +88,8 @@ public class IbisSorter implements Comparator<IbisIdentifier> {
         
     public int compare(IbisIdentifier id1, IbisIdentifier id2) {
 
-        String cluster1 = id1.location().getCluster();
-        String cluster2 = id2.location().getCluster();
+        Location cluster1 = id1.location().getParent();
+        Location cluster2 = id2.location().getParent();
         
         if (cluster1.equals(cluster2)) { 
             // The clusters are identical, so the order depends completely 
