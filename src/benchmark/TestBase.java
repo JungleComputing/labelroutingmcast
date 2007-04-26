@@ -50,8 +50,7 @@ public abstract class TestBase implements RegistryEventHandler {
             PortType.CONNECTION_MANY_TO_ONE, PortType.RECEIVE_AUTO_UPCALLS);
 
         IbisCapabilities s = new IbisCapabilities(
-                IbisCapabilities.WORLDMODEL_OPEN,
-                IbisCapabilities.REGISTRY_UPCALLS);
+                IbisCapabilities.REGISTRY_MEMBERSHIPMANAGEMENT);
         
         try {
             ibis = IbisFactory.createIbis(s, null, this, tp);
