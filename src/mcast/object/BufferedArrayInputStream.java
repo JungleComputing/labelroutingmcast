@@ -2,8 +2,8 @@
 
 package mcast.object; 
 
-import ibis.util.io.Conversion;
-import ibis.util.io.DataInputStream;
+import ibis.io.Conversion;
+import ibis.io.DataInputStream;
 
 import java.io.EOFException;
 import java.io.IOException;

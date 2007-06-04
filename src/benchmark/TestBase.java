@@ -53,7 +53,7 @@ public abstract class TestBase implements RegistryEventHandler {
                 IbisCapabilities.MEMBERSHIP);
         
         try {
-            ibis = IbisFactory.createIbis(s, null, this, tp);
+            ibis = IbisFactory.createIbis(s, null, true, this, tp);
         } catch(Throwable e) {
             System.out.println("Could not create Ibis!");
             e.printStackTrace();

@@ -289,6 +289,9 @@ public class LableRoutingMulticast extends Thread implements MessageUpcall {
     
     public void setDestination(IbisIdentifier [] destinations) { 
 
+        logger.debug("setDestination called, destinations.length = "
+                + destinations.length, new Throwable());
+
         if (changeOrder) { 
             // We are allowed to change the order of machines in the destination
             // array. This can be used to make the mcast 'cluster aware'.  
