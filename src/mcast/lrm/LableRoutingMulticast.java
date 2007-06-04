@@ -142,7 +142,7 @@ public class LableRoutingMulticast extends Thread implements MessageUpcall {
 
                 if (ibisID != null) {
                     if (ibisID != null) {
-                        sp.connect(ibisID, "Ring-" + name, 10000);
+                        sp.connect(ibisID, "Ring-" + name, 10000, true);
                         sendports.put(id, sp);
                     } else {
                         logger.info("No Ibis yet at position " + id);
