@@ -19,7 +19,7 @@ import ibis.ipl.*;
  */
 public class Test4 extends TestBase {
        
-    private static boolean verbose = false;
+    private static boolean verbose = true;
             
     private ObjectMulticaster omc;
     
@@ -57,6 +57,9 @@ public class Test4 extends TestBase {
                 data.iteration = i;                
                 runSender();
             } 
+            
+            System.err.println("Sender done");
+            
         } else {            
             // This one may start halfway, so just run until we see the last 
             // iteration number come by. 
@@ -99,7 +102,8 @@ public class Test4 extends TestBase {
         long start = System.currentTimeMillis();
         
         for (int i=0;i<count;i++) { 
-            size += omc.send(data);
+            omc.send(data);
+            size += omc.lastSize();
         } 
         
         long end = System.currentTimeMillis();
@@ -141,7 +145,7 @@ public class Test4 extends TestBase {
                     + tp + " MB/s.");
         } 
         
-        return (dd == null) || (dd.iteration < repeat);     
+        return (dd == null) || (dd.iteration < repeat-1);     
     }
                
     public static void main(String [] args) {
