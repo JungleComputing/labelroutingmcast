@@ -60,7 +60,7 @@ public abstract class TestBase implements RegistryEventHandler {
             System.exit(1);
         }
         
-        System.err.println("Ibis created!");
+//        System.err.println("Ibis created!");
                 
         init();
         
@@ -157,7 +157,7 @@ public abstract class TestBase implements RegistryEventHandler {
         
     protected synchronized void waitForMaster() { 
         
-        System.err.println("Waiting for master to arrive!");
+        // System.err.println("Waiting for master to arrive!");
         
         while (masterID == null) { 
             try { 
@@ -167,7 +167,7 @@ public abstract class TestBase implements RegistryEventHandler {
             }
         }        
         
-        System.err.println("Master to arrived " + masterID);
+        // System.err.println("Master to arrived " + masterID);
     }
         
     protected synchronized void waitForMasterToLeave() { 
@@ -180,7 +180,7 @@ public abstract class TestBase implements RegistryEventHandler {
             }
         }        
         
-        System.err.println("Got master " + masterID);
+        // System.err.println("Got master " + masterID);
     }
     
     public void addIbis(IbisIdentifier id) {
@@ -202,7 +202,7 @@ public abstract class TestBase implements RegistryEventHandler {
             masterID = id;
             notifyAll();
             
-            System.err.println("Master is " + id);
+//            System.err.println("Master is " + id);
         }
         
         participantsChanged = true;
