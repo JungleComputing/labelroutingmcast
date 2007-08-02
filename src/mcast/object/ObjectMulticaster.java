@@ -6,6 +6,7 @@ import ibis.io.SerializationOutput;
 
 import ibis.ipl.Ibis;
 import ibis.ipl.IbisIdentifier;
+import ibis.ipl.PortType;
 import ibis.util.TypedProperties;
 
 import java.io.IOException;
@@ -100,6 +101,10 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
         sin = SerializationBase.createSerializationInput("ibis", bin);
     }
 
+    public static PortType getPortType() {
+        return LableRoutingMulticast.getPortType();
+    }
+    
     public synchronized void setDestination(IbisIdentifier [] dest) {         
         destination = dest;
     }

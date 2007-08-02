@@ -82,7 +82,12 @@ public class LableRoutingMulticast extends Thread implements MessageUpcall {
         this.start();
     }
 
-
+    public static PortType getPortType() {
+        return new PortType(
+        PortType.SERIALIZATION_DATA, PortType.COMMUNICATION_RELIABLE,
+        PortType.CONNECTION_MANY_TO_ONE, PortType.RECEIVE_AUTO_UPCALLS);
+    }
+    
     private synchronized SendPort getSendPort(int id) {
         
         if (id == -1) { 
