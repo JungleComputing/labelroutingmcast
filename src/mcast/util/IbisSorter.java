@@ -105,7 +105,7 @@ public class IbisSorter implements Comparator<IbisIdentifier> {
             // machine with the sender to be first (which isn't that simple!). 
             
             if (preferredName == null) { 
-                return id1.toString().compareTo(id2.toString());
+                return id1.location().toString().compareTo(id2.location().toString());
             } else {
                 // Figure out if one of the two strings has a longer prefix 
                 // in common with 'preferredName'. Note that this will result 
@@ -113,15 +113,15 @@ public class IbisSorter implements Comparator<IbisIdentifier> {
                 // actually contains the 'preferredName'. Therefore, this 
                 // IbisIdentifier will end up at the first position of the 
                 // array, which is exactly what we want.  
-                int d1 = firstDifference(preferredName, id1.toString());
-                int d2 = firstDifference(preferredName, id2.toString());
+                int d1 = firstDifference(preferredName, id1.location().toString());
+                int d2 = firstDifference(preferredName, id2.location().toString());
                 
                 // If both have the same distance, we sort them alphabetically.
                 // Otherwise, we prefer the one that is closest to 
                 // 'preferredName', since these may actually be located on the 
                 // same machine.  
                 if (d1 == d2) { 
-                    return id1.toString().compareTo(id2.toString());
+                    return id1.location().toString().compareTo(id2.location().toString());
                 } else if (d1 <= d2) { 
                     return 1;
                 } else { 
