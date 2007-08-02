@@ -309,9 +309,6 @@ public class LableRoutingMulticast extends Thread implements MessageUpcall {
             this.destinations[i] = getIbisID(destinations[i]);            
             logger.debug("  " + i + " (" + destinations[i] + " at " 
                   + destinations[i].location().getParent() + ") -> " + this.destinations[i]);
-
-            System.err.println("LRMC:  " + i + " (" + destinations[i] + " at " 
-                + destinations[i].location().getParent() + ") -> " + this.destinations[i]);
         }
     }
     
