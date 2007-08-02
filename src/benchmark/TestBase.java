@@ -193,7 +193,7 @@ public abstract class TestBase implements RegistryEventHandler {
         
     public synchronized void joined(IbisIdentifier id) {
         
-        System.err.println("Join " + id);
+//        System.err.println("Join " + id);
         
         participants.add(id);
         
