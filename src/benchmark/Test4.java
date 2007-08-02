@@ -43,6 +43,8 @@ public class Test4 extends TestBase {
         
     private void start() throws IOException, ClassNotFoundException { 
 
+        waitForEnoughMachines();
+
         waitForMaster();        
         
         if (masterID.equals(ibis.identifier())) {         
