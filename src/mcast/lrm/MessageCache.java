@@ -21,6 +21,12 @@ public class MessageCache {
     public MessageCache(int cacheSize, int messageSize) { 
         this.MAX_SIZE = cacheSize;
         this.MESSAGE_SIZE = messageSize;
+        
+        // fill the cache
+        for (int i=0; i<MAX_SIZE; i++) {
+            Message m = get();
+            put(m);
+        }
     }
     
     public synchronized void put(Message m) {         
