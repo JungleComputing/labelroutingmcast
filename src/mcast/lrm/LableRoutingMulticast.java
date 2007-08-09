@@ -70,10 +70,7 @@ public class LableRoutingMulticast extends Thread implements MessageUpcall {
         this.sendQueue = new MessageQueue(
                 new TypedProperties(ibis.properties()).getIntProperty(
                     "lrmc.queueSize", 32));
-        portType = new PortType(
-                PortType.SERIALIZATION_DATA, PortType.COMMUNICATION_RELIABLE,
-                PortType.CONNECTION_MANY_TO_ONE, PortType.RECEIVE_AUTO_UPCALLS);
-
+        portType = getPortType();
         receive = ibis.createReceivePort(portType, "Ring-" + name, this);
         receive.enableConnections();
         receive.enableMessageUpcalls();

@@ -29,6 +29,17 @@ public class MessageCache {
         }
     }
     
+    public synchronized void setDestinationSize(int count) {
+        Message tmp = cache;
+        while(tmp != null) {
+            if(tmp.destinations == null || tmp.destinations.length < count) {
+                tmp.destinations = new short[count];
+            }
+            
+            tmp = tmp.next;
+        }
+    }
+    
     public synchronized void put(Message m) {         
         m.refcount--;
         if (m.refcount == 0) {
@@ -87,11 +98,10 @@ public class MessageCache {
     */
    
     
-    public Message get(int len) {
-        
+    public Message get(int len) {        
         if (len > MESSAGE_SIZE) { 
             // System.err.println("Creating new message of size " + len);
-            hits++;
+            miss++;
             return new Message(len);
         }
                 
@@ -99,7 +109,6 @@ public class MessageCache {
     }
 
     public synchronized Message get() {
-
         Message tmp = null;
 
         if (size == 0) {
