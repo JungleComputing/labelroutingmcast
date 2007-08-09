@@ -23,6 +23,9 @@ import org.apache.log4j.Level;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.WriterAppender;
 
+
+// TODO find a way to share destination arrays in messages --Rob
+
 public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
 
     static {
@@ -107,6 +110,7 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
     
     public synchronized void setDestination(IbisIdentifier [] dest) {         
         destination = dest;
+        cache.setDestinationSize(dest.length);
     }
     
     public void addIbis(IbisIdentifier id) { 
