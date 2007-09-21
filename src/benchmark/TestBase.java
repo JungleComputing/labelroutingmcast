@@ -50,7 +50,7 @@ public abstract class TestBase implements RegistryEventHandler {
             PortType.CONNECTION_MANY_TO_ONE, PortType.RECEIVE_AUTO_UPCALLS);
 
         IbisCapabilities s = new IbisCapabilities(
-                IbisCapabilities.MEMBERSHIP);
+                IbisCapabilities.MEMBERSHIP_TOTALLY_ORDERED);
         
         try {
             ibis = IbisFactory.createIbis(s, null, true, this, tp);
@@ -230,6 +230,10 @@ public abstract class TestBase implements RegistryEventHandler {
     }
 
     public void gotSignal(String s) {
+        // ignored
+    }
+    
+    public void electionResult(String election, IbisIdentifier result) {
         // ignored
     }
     

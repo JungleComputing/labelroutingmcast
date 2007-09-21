@@ -18,7 +18,7 @@
     </path>
 
     <!-- Internal target - Preparations for building. -->
-    <target name="prepare"> 
+    <target name="prepare" depends="clean"> 
     	<mkdir dir="${distdir}" />
         <mkdir dir="${builddir}" />
     </target>
@@ -60,6 +60,7 @@
 			<attribute name="Built-By" value="${user.name}"/>
 		</manifest>
 	</jar>
+         <delete failonerror="false" dir="${builddir}" />
     </target>
     
     <target name="build" depends="prepare,compile,jar">
