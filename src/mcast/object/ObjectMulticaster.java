@@ -1,6 +1,6 @@
 package mcast.object;
 
-import ibis.io.SerializationBase;
+import ibis.io.SerializationFactory;
 import ibis.io.SerializationInput;
 import ibis.io.SerializationOutput;
 
@@ -100,8 +100,8 @@ public class ObjectMulticaster implements MessageReceiver, ObjectReceiver {
         bout = new BufferedArrayOutputStream(os, MESSAGE_SIZE);
         bin = new BufferedArrayInputStream(null);
         
-        sout = SerializationBase.createSerializationOutput("ibis", bout);
-        sin = SerializationBase.createSerializationInput("ibis", bin);
+        sout = SerializationFactory.createSerializationOutput("ibis", bout);
+        sin = SerializationFactory.createSerializationInput("ibis", bin);
     }
 
     public static PortType getPortType() {
