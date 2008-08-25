@@ -229,11 +229,19 @@ public abstract class TestBase implements RegistryEventHandler {
         left(id);
     }
 
-    public void gotSignal(String s) {
+    public void electionResult(String election, IbisIdentifier result) {
         // ignored
     }
     
-    public void electionResult(String election, IbisIdentifier result) {
+    public void gotSignal(String signal, IbisIdentifier source) {
+        // ignored
+    }
+
+    public void poolClosed() {
+        // ignored
+    }
+
+    public void poolTerminated(IbisIdentifier source) {
         // ignored
     }
     
